@@ -1,0 +1,95 @@
+﻿@model Law_Firm_Management.Models.FirmNcbVm
+
+@{
+    ViewData["Title"] = "Add Firm";
+}
+
+<h2 class="mb-3">Add Firm</h2>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+      <form asp-controller="LawFirm"
+      asp-action="CreateNcb"
+      method="post">
+
+            @Html.AntiForgeryToken()
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Firm" class="form-label"></label>
+                    <input asp-for="Firm" class="form-control" />
+                    <span asp-validation-for="Firm" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-2">
+                    <label asp-for="States" class="form-label">State</label>
+                    <input asp-for="States" class="form-control" />
+                    <span asp-validation-for="States" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-2">
+                    <label asp-for="COCO_NO" class="form-label">COCO NO</label>
+                    <input asp-for="COCO_NO" class="form-control" />
+                    <span asp-validation-for="COCO_NO" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-2">
+                    <label asp-for="Number" class="form-label">#</label>
+                    <input asp-for="Number" class="form-control" />
+                    <span asp-validation-for="Number" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="YGC_ID" class="form-label">YGC ID</label>
+                    <input asp-for="YGC_ID" class="form-control" />
+                    <span asp-validation-for="YGC_ID" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="FTP" class="form-label"></label>
+                    <input asp-for="FTP" class="form-control" />
+                    <span asp-validation-for="FTP" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="Status" class="form-label"></label>
+                    <select asp-for="Status" class="form-select">
+                        <option value="Active">Active</option>
+                        <option value="Non Active">Non Active</option>
+                    </select>
+                    <span asp-validation-for="Status" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="Manager" class="form-label"></label>
+                    <input asp-for="Manager" class="form-control" />
+                    <span asp-validation-for="Manager" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-12">
+                    <label asp-for="Main_Contact" class="form-label">Main Contact</label>
+                    <textarea asp-for="Main_Contact"
+                              class="form-control"
+                              rows="3"></textarea>
+                    <span asp-validation-for="Main_Contact" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success">
+                    Save
+                </button>
+
+                <a asp-controller="LawFirm"
+                   asp-action="Index"
+                   class="btn btn-secondary">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

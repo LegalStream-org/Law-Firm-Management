@@ -1,0 +1,26 @@
+﻿@{
+    ViewData["Title"] = "Import Clients";
+}
+
+<h2>Import Clients</h2>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-warning">@Html.Raw(TempData["Error"])</div>
+}
+
+<form asp-action="Import" asp-controller="Client" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <div class="mb-3">
+        <label class="form-label">CSV File</label>
+        <input type="file" name="file" class="form-control" accept=".csv" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Import Clients</button>
+    <a asp-action="DownloadClientTemplate" class="btn btn-outline-secondary">Download Template</a>
+    <a asp-action="Index" class="btn btn-secondary">Back</a>
+</form>

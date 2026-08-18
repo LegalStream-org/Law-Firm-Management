@@ -1,0 +1,102 @@
+﻿@model Law_Firm_Management.Models.LawFirmPortfolioReportVm
+
+@{
+    ViewData["Title"] = "Portfolio Report";
+}
+
+<div class="container-fluid py-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0">Portfolio Report</h2>
+            <div class="text-muted">Law firm state mappings by portfolio</div>
+        </div>
+
+        <a asp-action="Index" class="btn btn-outline-secondary">Back</a>
+    </div>
+
+    <form method="get" asp-action="PortfolioReport" class="card mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Portfolio</label>
+                    <select name="portfolio" class="form-select">
+                        <option value="">All Portfolios</option>
+
+                        @foreach (var p in Model.PortfolioOptions)
+                        {
+                            if (p == Model.SelectedPortfolio)
+                            {
+                                <option value="@p" selected>@p</option>
+                            }
+                            else
+                            {
+                                <option value="@p">@p</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+                <div class="col-md-2">
+                    <a asp-action="ExportPortfolioReport"
+                       asp-route-portfolio="@Model.SelectedPortfolio"
+                       class="btn btn-success w-100">
+                        Export
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="card">
+        <div class="card-header">
+            <strong>Results</strong>
+            <span class="text-muted">(@Model.Rows.Count)</span>
+        </div>
+
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-striped table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>State</th>
+                            <th>Firm Name</th>
+                            <th>Portfolio</th>
+                            <th>COCO_NO</th>
+                            <th>Export ID</th>
+                            <th>SFTP Folder</th>
+                            <th class="text-end">Placement %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Rows.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-muted">No records found.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var r in Model.Rows)
+                            {
+                                <tr>
+                                    <td>@r.StateCode</td>
+                                    <td>@r.FirmName</td>
+                                    <td>@r.Portfolio</td>
+                                    <td>@r.COCO_NO</td>
+                                    <td>@r.ExportId</td>
+                                    <td>@r.SftpFolderPath</td>
+                                    <td class="text-end">@r.PlacementPercent?.ToString("0.00")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>

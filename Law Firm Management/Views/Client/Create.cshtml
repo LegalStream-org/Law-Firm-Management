@@ -1,0 +1,90 @@
+﻿@model Law_Firm_Management.Models.ClientEditVm
+
+@{
+    ViewData["Title"] = "Add Client";
+}
+
+<div class="page-header">
+    <h2>Add Client</h2>
+    <div class="page-subtitle">Create a new client profile.</div>
+</div>
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="ClientName" class="form-label"></label>
+            <input asp-for="ClientName" class="form-control" />
+            <span asp-validation-for="ClientName" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-3">
+            <label asp-for="ShortName" class="form-label"></label>
+            <input asp-for="ShortName" class="form-control" />
+        </div>
+
+        <div class="col-md-3">
+            <label asp-for="Status" class="form-label"></label>
+            <select asp-for="Status" class="form-select">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+            </select>
+        </div>
+
+        <div class="col-md-4">
+            <label asp-for="MainPhone" class="form-label"></label>
+            <input asp-for="MainPhone" class="form-control" />
+        </div>
+
+        <div class="col-md-4">
+            <label asp-for="MainEmail" class="form-label"></label>
+            <input asp-for="MainEmail" class="form-control" />
+        </div>
+
+        <div class="col-md-4">
+            <label asp-for="Website" class="form-label"></label>
+            <input asp-for="Website" class="form-control" />
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="Address1" class="form-label"></label>
+            <input asp-for="Address1" class="form-control" />
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="Address2" class="form-label"></label>
+            <input asp-for="Address2" class="form-control" />
+        </div>
+
+        <div class="col-md-4">
+            <label asp-for="City" class="form-label"></label>
+            <input asp-for="City" class="form-control" />
+        </div>
+
+        <div class="col-md-4">
+            <label asp-for="State" class="form-label"></label>
+            <input asp-for="State" class="form-control" />
+        </div>
+
+        <div class="col-md-4">
+            <label asp-for="Zip" class="form-label"></label>
+            <input asp-for="Zip" class="form-control" />
+        </div>
+
+        <div class="col-12">
+            <label asp-for="ProfileNotes" class="form-label"></label>
+            <textarea asp-for="ProfileNotes" class="form-control" rows="4"></textarea>
+        </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Save Client</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

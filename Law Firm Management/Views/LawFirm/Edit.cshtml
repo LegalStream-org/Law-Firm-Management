@@ -1,0 +1,960 @@
+﻿@model Law_Firm_Management.Models.LawFirmEditVm
+
+@{
+    ViewData["Title"] = "Edit Law Firm";
+    var mainFormId = "lawFirmProfileForm";
+}
+
+<style>
+    .lf-card {
+        border: 1px solid rgba(0,0,0,.08);
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.04);
+    }
+
+        .lf-card .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(0,0,0,.06);
+            padding: 1rem 1.25rem;
+        }
+
+        .lf-card .card-body {
+            padding: 1.25rem;
+        }
+
+    .table td, .table th {
+        vertical-align: middle;
+    }
+
+    .form-control, .form-select, .btn {
+        border-radius: 10px;
+    }
+
+    .sticky-side {
+        position: sticky;
+        top: 15px;
+    }
+
+    .wordwrap {
+        word-break: break-word;
+        white-space: normal;
+    }
+</style>
+
+<div class="container-fluid py-3">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h2 class="mb-0">@Model.FirmName</h2>
+            <div class="text-muted">Edit Law Firm</div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a asp-action="Details" asp-route-id="@Model.LawFirmId" class="btn btn-outline-primary">View</a>
+            <a asp-action="Index" class="btn btn-outline-secondary">Back</a>
+        </div>
+    </div>
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success">@TempData["Message"]</div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="row g-3">
+
+        <div class="col-12 col-xl-8">
+
+            <!-- Firm Profile -->
+            <div class="card lf-card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Firm Profile</h5>
+                    <div class="text-muted small">Basic firm information and profile notes.</div>
+                </div>
+
+                <div class="card-body">
+                    <form id="@mainFormId" asp-action="Edit" asp-controller="LawFirm" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden" asp-for="LawFirmId" />
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+                                <label asp-for="FirmName" class="form-label">Firm Name</label>
+                                <input asp-for="FirmName" class="form-control" />
+                                <span asp-validation-for="FirmName" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label asp-for="ShortName" class="form-label">Short Name</label>
+                                <input asp-for="ShortName" class="form-control" />
+                                <span asp-validation-for="ShortName" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label asp-for="Status" class="form-label">Status</label>
+                                <select asp-for="Status" class="form-select">
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                </select>
+                                <span asp-validation-for="Status" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="MainPhone" class="form-label">Phone</label>
+                                <input asp-for="MainPhone" class="form-control" />
+                                <span asp-validation-for="MainPhone" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="MainEmail" class="form-label">Email</label>
+                                <input asp-for="MainEmail" class="form-control" />
+                                <span asp-validation-for="MainEmail" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="Website" class="form-label">Website</label>
+                                <input asp-for="Website" class="form-control" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Address1" class="form-label">Address 1</label>
+                                <input asp-for="Address1" class="form-control" />
+                                <span asp-validation-for="Address1" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Address2" class="form-label">Address 2</label>
+                                <input asp-for="Address2" class="form-control" />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="City" class="form-label">City</label>
+                                <input asp-for="City" class="form-control" />
+                                <span asp-validation-for="City" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="State" class="form-label">State</label>
+                                <input asp-for="State" class="form-control" />
+                                <span asp-validation-for="State" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="Zip" class="form-label">Zip</label>
+                                <input asp-for="Zip" class="form-control" />
+                                <span asp-validation-for="Zip" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="ProfileNotes" class="form-label">Profile Notes</label>
+                                <textarea asp-for="ProfileNotes" class="form-control" rows="5"></textarea>
+                            </div>
+
+                        </div>
+                    </form>
+
+                    <div class="mt-3">
+                        <button type="submit" form="@mainFormId" formnovalidate class="btn btn-primary">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- State Mapping -->
+            <div class="card lf-card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">State Mapping</h5>
+                    <div class="text-muted small">State routing, COCO, export ID, placement %, and SFTP folder.</div>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>State</th>
+                                    <th>COCO_NO</th>
+                                    <th>Export ID</th>
+                                    <th>Placement %</th>
+                                    <th>Portfolio</th>
+                                    <th>SFTP Folder</th>
+                                    <th>Active</th>
+                                    <th>Notes</th>
+                                    <th style="width:180px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.StateMappings.Any())
+                                {
+                                    <tr>
+                                        <td colspan="9" class="text-muted">No state mappings found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var s in Model.StateMappings)
+                                    {
+                                        var formId = $"stateForm_{s.LawFirmStateMapId}";
+
+                                        <tr>
+                                            <td>
+                                                <select name="StateCode" form="@formId" class="form-select form-select-sm">
+                                                    @foreach (var state in Model.StateCodeOptions)
+                                                    {
+                                                        <option value="@state" selected="@(state == s.StateCode)">
+                                                            @state
+                                                        </option>
+                                                    }
+                                                </select>
+                                            </td>
+
+                                            <td>
+                                                <input name="COCO_NO" form="@formId" value="@s.COCO_NO" class="form-control form-control-sm" />
+                                            </td>
+
+                                            <td>
+                                                <input name="ExportId" form="@formId" value="@s.ExportId" class="form-control form-control-sm" />
+                                            </td>
+
+                                            <td>
+                                                <input name="PlacementPercent" form="@formId" value="@s.PlacementPercent" class="form-control form-control-sm" />
+                                            </td>
+
+                                            <td>
+                                                <select name="Portfolio" form="@formId" class="form-select form-select-sm">
+                                                    <option value="">--</option>
+                                                    @foreach (var p in Model.PortfolioOptions)
+                                                    {
+                                                        <option value="@p" selected="@(p == s.Portfolio)">
+                                                            @p
+                                                        </option>
+                                                    }
+                                                </select>
+                                            </td>
+
+                                            <td>
+                                                <input name="SftpFolderPath" form="@formId" value="@s.SftpFolderPath" class="form-control form-control-sm" />
+                                            </td>
+
+                                            <td class="text-center">
+                                                @if (s.IsActive)
+                                                {
+                                                    <input type="checkbox" name="IsActive" value="true" form="@formId" checked="checked" />
+                                                }
+                                                else
+                                                {
+                                                    <input type="checkbox" name="IsActive" value="true" form="@formId" />
+                                                }
+
+                                                <input type="hidden" name="IsActive" value="false" form="@formId" />
+                                            </td>
+
+                                            <td>
+                                                <input name="Notes" form="@formId" value="@s.Notes" class="form-control form-control-sm" />
+                                            </td>
+
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <form id="@formId" asp-action="UpdateStateMap" asp-controller="LawFirm" method="post" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="LawFirmStateMapId" value="@s.LawFirmStateMapId" />
+                                                        <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                                    </form>
+
+                                                    <form asp-action="DeleteStateMap" asp-controller="LawFirm" method="post" class="d-inline" onsubmit="return confirm('Delete this state mapping?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="lawFirmStateMapId" value="@s.LawFirmStateMapId" />
+                                                        <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <hr />
+
+                    <form asp-action="AddStateMap" asp-controller="LawFirm" method="post" class="row g-2">
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+
+                        <div class="col-md-2">
+                            <label class="form-label">State</label>
+                            <select name="StateCode" class="form-select">
+                                <option value="">Select State</option>
+                                @foreach (var state in Model.StateCodeOptions)
+                                {
+                                    <option value="@state">@state</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Portfolio</label>
+                            <select name="Portfolio" class="form-select">
+                                <option value="">Select</option>
+                                @foreach (var p in Model.PortfolioOptions)
+                                {
+                                    <option value="@p">@p</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">COCO_NO</label>
+                            <input name="COCO_NO" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Export ID</label>
+                            <input name="ExportId" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Placement %</label>
+                            <input name="PlacementPercent" class="form-control" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">SFTP Folder</label>
+                            <input name="SftpFolderPath" class="form-control" />
+                        </div>
+
+                        <div class="col-md-1">
+                            <label class="form-label">Active</label>
+                            <div>
+                                <input type="hidden" name="IsActive" value="false" />
+                                <input type="checkbox" name="IsActive" value="true" checked />
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Notes</label>
+                            <input name="Notes" class="form-control" />
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-outline-primary">Add State Map</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Contacts -->
+            <div class="card lf-card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Contacts</h5>
+                    <div class="text-muted small">IT, Accounting, day-to-day, escalation, and other contacts.</div>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>Title</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Preferred Method</th>
+                                    <th>Active</th>
+                                    <th>Notes</th>
+                                    <th style="width:180px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Contacts.Any())
+                                {
+                                    <tr>
+                                        <td colspan="9" class="text-muted">No contacts found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var c in Model.Contacts)
+                                    {
+                                        var formId = $"contactForm_{c.LawFirmContactId}";
+
+                                        <tr>
+                                            <td>
+                                                <select name="ContactType" form="@formId" class="form-select form-select-sm">
+                                                    @foreach (var type in Model.ContactTypeOptions)
+                                                    {
+                                                        <option value="@type" selected="@(type == c.ContactType)">
+                                                            @type
+                                                        </option>
+                                                    }
+                                                </select>
+                                            </td>
+
+                                            <td><input name="ContactName" form="@formId" value="@c.ContactName" class="form-control form-control-sm" /></td>
+                                            <td><input name="Title" form="@formId" value="@c.Title" class="form-control form-control-sm" /></td>
+                                            <td><input name="Email" form="@formId" value="@c.Email" class="form-control form-control-sm" /></td>
+                                            <td><input name="Phone" form="@formId" value="@c.Phone" class="form-control form-control-sm" /></td>
+                                            <td><input name="PreferredContactMethod" form="@formId" value="@c.PreferredContactMethod" class="form-control form-control-sm" /></td>
+
+                                            <td class="text-center">
+                                                @if (c.IsActive)
+                                                {
+                                                    <input type="checkbox" name="IsActive" value="true" form="@formId" checked="checked" />
+                                                }
+                                                else
+                                                {
+                                                    <input type="checkbox" name="IsActive" value="true" form="@formId" />
+                                                }
+
+                                                <input type="hidden" name="IsActive" value="false" form="@formId" />
+                                            </td>
+
+                                            <td><input name="Notes" form="@formId" value="@c.Notes" class="form-control form-control-sm" /></td>
+
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <form id="@formId" asp-action="UpdateContact" asp-controller="LawFirm" method="post" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="LawFirmContactId" value="@c.LawFirmContactId" />
+                                                        <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                                    </form>
+
+                                                    <form asp-action="DeleteContact" asp-controller="LawFirm" method="post" class="d-inline" onsubmit="return confirm('Delete this contact?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="lawFirmContactId" value="@c.LawFirmContactId" />
+                                                        <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <hr />
+
+                    <form asp-action="AddContact" asp-controller="LawFirm" method="post" class="row g-2">
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+
+                        <div class="col-md-2">
+                            <label class="form-label">Type</label>
+                            <select name="ContactType" class="form-select">
+                                <option value="">Select Type</option>
+                                @foreach (var type in Model.ContactTypeOptions)
+                                {
+                                    <option value="@type">@type</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Name</label>
+                            <input name="ContactName" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Title</label>
+                            <input name="Title" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Email</label>
+                            <input name="Email" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Phone</label>
+                            <input name="Phone" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Preferred Method</label>
+                            <input name="PreferredContactMethod" class="form-control" />
+                        </div>
+
+                        <div class="col-md-10">
+                            <label class="form-label">Notes</label>
+                            <input name="Notes" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Active</label>
+                            <div>
+                                <input type="hidden" name="IsActive" value="false" />
+                                <input type="checkbox" name="IsActive" value="true" checked />
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-outline-primary">Add Contact</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="card lf-card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Notes</h5>
+                    <div class="text-muted small">Internal note history for this firm.</div>
+                </div>
+
+                <div class="card-body">
+
+                    <form asp-action="AddNote" asp-controller="LawFirm" method="post" class="row g-2 mb-3">
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+                        <input type="hidden" name="returnAction" value="Edit" />
+
+                        <div class="col-md-2">
+                            <label class="form-label">Note Type</label>
+                            <select name="NoteType" class="form-select form-select-sm">
+                                @foreach (var type in Model.NoteOptions)
+                                {
+                                    <option value="@type">@type</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label">Note</label>
+                            <input name="NoteText" class="form-control" placeholder="Enter note" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-outline-primary w-100">Add Note</button>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:160px;">Date</th>
+                                    <th style="width:140px;">Type</th>
+                                    <th style="width:160px;">Entered By</th>
+                                    <th>Note</th>
+                                    <th style="width:180px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Notes.Any())
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-muted">No notes found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var n in Model.Notes)
+                                    {
+                                        var formId = $"noteForm_{n.LawFirmNoteId}";
+
+                                        <tr>
+                                            <td>@n.EnteredDate.ToString("MM/dd/yyyy HH:mm")</td>
+                                            <td><input name="NoteType" form="@formId" value="@n.NoteType" class="form-control form-control-sm" /></td>
+                                            <td>@n.EnteredBy</td>
+                                            <td><input name="NoteText" form="@formId" value="@n.NoteText" class="form-control form-control-sm" /></td>
+
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <form id="@formId" asp-action="UpdateNote" asp-controller="LawFirm" method="post" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="LawFirmNoteId" value="@n.LawFirmNoteId" />
+                                                        <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                                    </form>
+
+                                                    <form asp-action="DeleteNote" asp-controller="LawFirm" method="post" class="d-inline" onsubmit="return confirm('Delete this note?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="lawFirmNoteId" value="@n.LawFirmNoteId" />
+                                                        <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Documents -->
+            <div class="card lf-card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Documents</h5>
+                    <div class="text-muted small">Contracts, NDAs, and other firm documents.</div>
+                </div>
+
+                <div class="card-body">
+
+                    <form asp-action="AddDocument" asp-controller="LawFirm" method="post" enctype="multipart/form-data" class="row g-2 mb-4">
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+                        <input type="hidden" name="returnAction" value="Edit" />
+
+                        <div class="col-md-2">
+                            <label class="form-label">Type</label>
+                            <select name="DocumentType" class="form-select">
+                                <option value="">Select Type</option>
+                                @foreach (var t in Model.DocumentTypeOptions)
+                                {
+                                    <option value="@t">@t</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Document Name</label>
+                            <input name="DocumentName" class="form-control" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Choose File</label>
+                            <input name="UploadFile" type="file" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Effective</label>
+                            <input name="EffectiveDate" type="date" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Expiration</label>
+                            <input name="ExpirationDate" type="date" class="form-control" />
+                        </div>
+
+                        <div class="col-md-10">
+                            <label class="form-label">Notes</label>
+                            <input name="Notes" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Active</label>
+                            <div>
+                                <input type="hidden" name="IsActive" value="false" />
+                                <input type="checkbox" name="IsActive" value="true" checked />
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-outline-primary">Upload Document</button>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>File</th>
+                                    <th>Effective</th>
+                                    <th>Expiration</th>
+                                    <th>Active</th>
+                                    <th>Uploaded By</th>
+                                    <th>Uploaded</th>
+                                    <th style="width:320px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Documents.Any())
+                                {
+                                    <tr>
+                                        <td colspan="9" class="text-muted">No documents found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var d in Model.Documents)
+                                    {
+                                        var replaceFormId = $"replaceDocForm_{d.LawFirmDocumentId}";
+
+                                        <tr>
+                                            <td>@d.DocumentType</td>
+                                            <td>@d.DocumentName</td>
+                                            <td>@d.OriginalFileName</td>
+                                            <td>@(d.EffectiveDate?.ToString("MM/dd/yyyy") ?? "")</td>
+                                            <td>@(d.ExpirationDate?.ToString("MM/dd/yyyy") ?? "")</td>
+                                            <td>@(d.IsActive ? "Yes" : "No")</td>
+                                            <td>@d.UploadedBy</td>
+                                            <td>@d.UploadedDate.ToString("MM/dd/yyyy")</td>
+
+                                            <td>
+                                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                                    <a asp-action="DownloadDocument"
+                                                       asp-controller="LawFirm"
+                                                       asp-route-id="@d.LawFirmDocumentId"
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        Download
+                                                    </a>
+
+                                                    <form asp-action="DeleteDocument"
+                                                          asp-controller="LawFirm"
+                                                          method="post"
+                                                          class="d-inline"
+                                                          onsubmit="return confirm('Delete this document?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="lawFirmDocumentId" value="@d.LawFirmDocumentId" />
+                                                        <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+                                                        <input type="hidden" name="returnAction" value="Edit" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                    </form>
+                                                </div>
+
+                                                <form id="@replaceFormId"
+                                                      asp-action="ReplaceDocument"
+                                                      asp-controller="LawFirm"
+                                                      method="post"
+                                                      enctype="multipart/form-data"
+                                                      class="row g-1">
+                                                    @Html.AntiForgeryToken()
+
+                                                    <input type="hidden" name="LawFirmDocumentId" value="@d.LawFirmDocumentId" />
+                                                    <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+                                                    <input type="hidden" name="returnAction" value="Edit" />
+                                                    <input type="hidden" name="DocumentType" value="@d.DocumentType" />
+                                                    <input type="hidden" name="DocumentName" value="@d.DocumentName" />
+                                                    <input type="hidden" name="Notes" value="@d.Notes" />
+                                                    <input type="hidden" name="EffectiveDate" value="@(d.EffectiveDate?.ToString("yyyy-MM-dd"))" />
+                                                    <input type="hidden" name="ExpirationDate" value="@(d.ExpirationDate?.ToString("yyyy-MM-dd"))" />
+                                                    <input type="hidden" name="IsActive" value="@d.IsActive" />
+
+                                                    <div class="col-8">
+                                                        <input name="UploadFile" type="file" class="form-control form-control-sm" />
+                                                    </div>
+
+                                                    <div class="col-4">
+                                                        <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Replace</button>
+                                                    </div>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Side -->
+        <div class="col-12 col-xl-4">
+            <div class="sticky-side">
+
+                <div class="card lf-card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Summary</h5>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Status</span>
+                            <strong>@Model.Status</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-2">
+                            <span class="text-muted">States</span>
+                            <strong>@Model.StateMappings.Count</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-2">
+                            <span class="text-muted">Contacts</span>
+                            <strong>@Model.Contacts.Count</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-2">
+                            <span class="text-muted">Notes</span>
+                            <strong>@Model.Notes.Count</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card lf-card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Accounting Mapping</h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Accounting Firm</th>
+                                    <th>Active</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var m in Model.AccountingMaps)
+                                {
+                                    var formId = $"acctMap_{m.LawFirmAccountingMapId}";
+
+                                    <tr>
+                                        <td>
+                                            <select name="AccountingFirmName" form="@formId" class="form-select">
+                                                @foreach (var f in Model.AccountingFirmOptions)
+                                                {
+                                                    <option value="@f" selected="@(f == m.AccountingFirmName)">
+                                                        @f
+                                                    </option>
+                                                }
+                                            </select>
+                                        </td>
+
+                                        <td class="text-center">
+                                            @if (m.IsActive)
+                                            {
+                                                <input type="checkbox" name="IsActive" value="true" form="@formId" checked="checked" />
+                                            }
+                                            else
+                                            {
+                                                <input type="checkbox" name="IsActive" value="true" form="@formId" />
+                                            }
+
+                                            <input type="hidden" name="IsActive" value="false" form="@formId" />
+                                        </td>
+
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <form id="@formId" asp-action="UpdateAccountingMap" asp-controller="LawFirm" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+
+                                                    <input type="hidden" name="lawFirmAccountingMapId" value="@m.LawFirmAccountingMapId" />
+                                                    <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+
+                                                    <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                                </form>
+
+                                                <form asp-action="DeleteAccountingMap" asp-controller="LawFirm" method="post" class="d-inline"
+                                                      onsubmit="return confirm('Delete this accounting mapping?');">
+                                                    @Html.AntiForgeryToken()
+
+                                                    <input type="hidden" name="lawFirmAccountingMapId" value="@m.LawFirmAccountingMapId" />
+                                                    <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+
+                        <hr />
+
+                        <form asp-action="AddAccountingMap" method="post" class="row g-2">
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+
+                            <div class="col-md-6">
+                                <select name="AccountingFirmName" class="form-select">
+                                    <option value="">Select Firm</option>
+                                    @foreach (var f in Model.AccountingFirmOptions)
+                                    {
+                                        <option value="@f">@f</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <input type="checkbox" name="isActive" value="true" checked />
+                            <input type="hidden" name="isActive" value="false" />
+
+                            <div class="col-md-2">
+                                <button class="btn btn-success">Add</button>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+
+                <div class="card lf-card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Recent Audit</h5>
+                    </div>
+
+                    <div class="card-body">
+                        @if (!Model.AuditHistory.Any())
+                        {
+                            <div class="text-muted">No audit history found.</div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var a in Model.AuditHistory.Take(10))
+                                        {
+                                            <tr>
+                                                <td>@a.ChangedDate.ToString("MM/dd/yyyy HH:mm")</td>
+                                                <td class="wordwrap">@a.ChangeSummary</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="card lf-card">
+                    <div class="card-header">
+                        <h5 class="mb-0 text-danger">Danger Zone</h5>
+                    </div>
+
+                    <div class="card-body">
+                        <form asp-action="DeleteFirm" asp-controller="LawFirm" method="post" onsubmit="return confirm('Delete this Firm?');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+                            <button type="submit" class="btn btn-danger w-100">Delete Firm</button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+     
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

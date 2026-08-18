@@ -1,0 +1,529 @@
+﻿@model Law_Firm_Management.Models.LawFirmEditVm
+
+
+@{
+    ViewData["Title"] = "Law Firm Details";
+}
+
+<div class="container-fluid py-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0">@Model.FirmName</h2>
+            <div class="text-muted">Law Firm Details</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary">Back</a>
+            <a asp-action="Edit" asp-route-id="@Model.LawFirmId" class="btn btn-primary">Edit</a>
+        </div>
+    </div>
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success">@TempData["Message"]</div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <div class="row g-3">
+        <div class="col-12 col-lg-8">
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Firm Profile</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                            <tr><th style="width:200px;">Firm Name</th><td>@Model.FirmName</td></tr>
+                            <tr><th>Short Name</th><td>@Model.ShortName</td></tr>
+                            <tr><th>Status</th><td>@Model.Status</td></tr>
+                            <tr><th>Main Phone</th><td>@Model.MainPhone</td></tr>
+                            <tr><th>Main Email</th><td>@Model.MainEmail</td></tr>
+                            <tr><th>Website</th><td>@Model.Website</td></tr>
+                            <tr><th>Address</th><td>@Model.Address1 @Model.Address2, @Model.City, @Model.State @Model.Zip</td></tr>
+                            <tr><th>Profile Notes</th><td>@Model.ProfileNotes</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">State Mapping</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>State</th>
+                                    <th>COCO_NO</th>
+                                    <th>Export ID</th>
+                                    <th>Placement %</th>
+                                    <th>Portfolio</th>
+                                    <th>SFTP Folder</th>                                   
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.StateMappings.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-muted">No state mappings found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var s in Model.StateMappings)
+                                    {
+                                        <tr>
+                                            <td>@s.StateCode</td>
+                                            <td>@s.COCO_NO</td>
+                                            <td>@s.ExportId</td>
+                                            <td>@(s.PlacementPercent?.ToString("0.##") ?? "")</td>
+                                            <td>@s.Portfolio</td>
+                                            <td>@s.SftpFolderPath</td>                                            
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Contacts</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>Title</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Preferred Method</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Contacts.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-muted">No contacts found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var c in Model.Contacts)
+                                    {
+                                        <tr>
+                                            <td>@c.ContactType</td>
+                                            <td>@c.ContactName</td>
+                                            <td>@c.Title</td>
+                                            <td>@c.Email</td>
+                                            <td>@c.Phone</td>
+                                            <td>@c.PreferredContactMethod</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Notes</h5>
+                </div>
+                <div class="card-body">
+
+                    <form asp-action="AddNote" method="post" class="mb-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+                        <input type="hidden" name="returnAction" value="Details" />
+
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <label class="form-label">Note Type</label>
+                                <select name="NoteType" class="form-select form-select-sm">
+                                    @foreach (var Type in Model.NoteOptions)
+                                    {
+                                        <option value=@Type>@Type</option>
+                                    }                                 
+                                </select>
+                                @* <input name="NoteType" class="form-control" placeholder="General / IT / Billing / Ops" /> *@
+                            </div>
+                            <div class="col-md-9">
+                                <label class="form-label">Add Note</label>
+                                <textarea name="NoteText" class="form-control" rows="3" placeholder="Enter note"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="mt-2 text-end">
+                            <button type="submit" class="btn btn-outline-primary">Add Note</button>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width:160px;">Date</th>
+                                    <th style="width:140px;">Type</th>
+                                    <th style="width:160px;">Entered By</th>
+                                    <th>Note</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Notes.Any())
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-muted">No notes found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var n in Model.Notes)
+                                    {
+                                        <tr>
+                                            <td>@n.EnteredDate.ToString("MM/dd/yyyy HH:mm")</td>
+                                            <td>@n.NoteType</td>
+                                            <td>@n.EnteredBy</td>
+                                            <td>@n.NoteText</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card lf-card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Documents</h5>
+                    <div class="text-muted small">Contracts, NDAs, and other firm documents.</div>
+                </div>
+                <div class="card-body">
+
+                    <form asp-action="AddDocument" method="post" enctype="multipart/form-data" class="row g-2 mb-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+                        <input type="hidden" name="returnAction" value="Edit" />
+
+                        <div class="col-md-2">
+                            <label class="form-label">Type</label>
+                            <select name="DocumentType" class="form-select">
+                                <option value="">Select Type</option>
+                                @foreach (var t in Model.DocumentTypeOptions)
+                                {
+                                    <option value="@t">@t</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Document Name</label>
+                            <input name="DocumentName" class="form-control" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Choose File</label>
+                            <input name="UploadFile" type="file" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Effective</label>
+                            <input name="EffectiveDate" type="date" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Expiration</label>
+                            <input name="ExpirationDate" type="date" class="form-control" />
+                        </div>
+
+                        <div class="col-md-10">
+                            <label class="form-label">Notes</label>
+                            <input name="Notes" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Active</label>
+                            <div>
+                                <input type="hidden" name="IsActive" value="false" />
+                                <input type="checkbox" name="IsActive" value="true" checked />
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-outline-primary">Upload Document</button>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>File</th>
+                                    <th>Effective</th>
+                                    <th>Expiration</th>
+                                    <th>Active</th>
+                                    <th>Uploaded By</th>
+                                    <th>Uploaded</th>
+                                    <th style="width:320px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Documents.Any())
+                                {
+                                    <tr>
+                                        <td colspan="9" class="text-muted">No documents found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var d in Model.Documents)
+                                    {
+                                        var replaceFormId = $"replaceDocForm_{d.LawFirmDocumentId}";
+                                        <tr>
+                                            <td>@d.DocumentType</td>
+                                            <td>@d.DocumentName</td>
+                                            <td>@d.OriginalFileName</td>
+                                            <td>@(d.EffectiveDate?.ToString("MM/dd/yyyy") ?? "")</td>
+                                            <td>@(d.ExpirationDate?.ToString("MM/dd/yyyy") ?? "")</td>
+                                            <td>@(d.IsActive ? "Yes" : "No")</td>
+                                            <td>@d.UploadedBy</td>
+                                            <td>@d.UploadedDate.ToString("MM/dd/yyyy")</td>
+                                            <td>
+                                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                                    <a asp-action="DownloadDocument"
+                                                       asp-route-id="@d.LawFirmDocumentId"
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        Download
+                                                    </a>
+
+                                                    <form asp-action="DeleteDocument"
+                                                          method="post"
+                                                          class="d-inline"
+                                                          onsubmit="return confirm('Delete this document?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="lawFirmDocumentId" value="@d.LawFirmDocumentId" />
+                                                        <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+                                                        <input type="hidden" name="returnAction" value="Edit" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                    </form>
+                                                </div>
+
+                                                <form id="@replaceFormId"
+                                                      asp-action="ReplaceDocument"
+                                                      method="post"
+                                                      enctype="multipart/form-data"
+                                                      class="row g-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="LawFirmDocumentId" value="@d.LawFirmDocumentId" />
+                                                    <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+                                                    <input type="hidden" name="returnAction" value="Edit" />
+                                                    <input type="hidden" name="DocumentType" value="@d.DocumentType" />
+                                                    <input type="hidden" name="DocumentName" value="@d.DocumentName" />
+                                                    <input type="hidden" name="Notes" value="@d.Notes" />
+                                                    <input type="hidden" name="EffectiveDate" value="@(d.EffectiveDate?.ToString("yyyy-MM-dd"))" />
+                                                    <input type="hidden" name="ExpirationDate" value="@(d.ExpirationDate?.ToString("yyyy-MM-dd"))" />
+                                                    <input type="hidden" name="IsActive" value="@d.IsActive" />
+
+                                                    <div class="col-8">
+                                                        <input name="UploadFile" type="file" class="form-control form-control-sm" />
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Replace</button>
+                                                    </div>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <span>States</span>
+                        <strong>@Model.StateMappings.Count</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>Contacts</span>
+                        <strong>@Model.Contacts.Count</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>Notes</span>
+                        <strong>@Model.Notes.Count</strong>
+                    </div>
+                </div>
+            </div>
+
+           
+
+            <div class="card lf-card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Accounting Activity</h5>
+                </div>
+
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Last Invoice</span>
+                        <strong>@(Model.AccountingActivity.LastInvoice?.ToString("MM/dd/yyyy") ?? "None")</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-2">
+                        <span class="text-muted">Last Cost File</span>
+                        <strong>@(Model.AccountingActivity.LastCostFile?.ToString("MM/dd/yyyy") ?? "None")</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-2">
+                        <span class="text-muted">Last Remit</span>
+                        <strong>@(Model.AccountingActivity.LastRemit?.ToString("MM/dd/yyyy") ?? "None")</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card lf-card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Accounting Mapping</h5>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Accounting Firm</th>
+                                    <th style="width:120px;">Active</th>
+                                    <th style="width:180px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.AccountingMaps.Any())
+                                {
+                                    <tr>
+                                        <td colspan="3" class="text-muted">No accounting mappings found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var m in Model.AccountingMaps)
+                                    {
+                                        var formId = $"detailsAcctMap_{m.LawFirmAccountingMapId}";
+
+                                        <tr>
+                                            <td>@m.AccountingFirmName</td>
+
+                                            <td class="text-center">
+                                                @if (m.IsActive)
+                                                {
+                                                    <input type="checkbox" name="isActive" value="true" form="@formId" checked />
+                                                }
+                                                else
+                                                {
+                                                    <input type="checkbox" name="isActive" value="true" form="@formId" />
+                                                }
+
+                                                <input type="hidden" name="isActive" value="false" form="@formId" />
+                                                <input type="hidden" name="accountingFirmName" value="@m.AccountingFirmName" form="@formId" />
+                                            </td>
+
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <form id="@formId"
+                                                          asp-action="UpdateAccountingMap"
+                                                          asp-controller="LawFirm"
+                                                          method="post"
+                                                          class="d-inline">
+                                                        @Html.AntiForgeryToken()
+
+                                                        <input type="hidden" name="lawFirmAccountingMapId" value="@m.LawFirmAccountingMapId" />
+                                                        <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+
+                                                        <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                                    </form>
+
+                                                    <form asp-action="DeleteAccountingMap"
+                                                          asp-controller="LawFirm"
+                                                          method="post"
+                                                          class="d-inline"
+                                                          onsubmit="return confirm('Delete this accounting mapping?');">
+                                                        @Html.AntiForgeryToken()
+
+                                                        <input type="hidden" name="lawFirmAccountingMapId" value="@m.LawFirmAccountingMapId" />
+                                                        <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Audit</h5>
+                </div>
+                <div class="card-body">
+                    @if (!Model.AuditHistory.Any())
+                    {
+                        <div class="text-muted">No audit history found.</div>
+                    }
+                    else
+                    {
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var a in Model.AuditHistory.Take(10))
+                                {
+                                    <tr>
+                                        <td>@a.ChangedDate.ToString("MM/dd/yyyy HH:mm")</td>
+                                        <td>@a.ChangeSummary</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+
+          
+        </div>
+    </div>
+</div>
+

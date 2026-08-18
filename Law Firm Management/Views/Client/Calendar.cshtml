@@ -1,0 +1,287 @@
+﻿@{
+    ViewData["Title"] = "Client Task Calendar";
+}
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0">Client Task Calendar</h2>
+            <div class="text-muted">Recurring task calendar for all clients.</div>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-secondary">Back to Clients</a>
+        </div>
+    </div>
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success">@TempData["Message"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-warning">@TempData["Error"]</div>
+    }
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">Filters</h5>
+        </div>
+        <div class="card-body">
+            <form id="calendarFilterForm" class="row g-2">
+                <div class="col-md-3">
+                    <label class="form-label">Client</label>
+                    <select id="filterClientId" class="form-select">
+                        <option value="">All Clients</option>
+                        @if (ViewBag.ClientOptions != null)
+                        {
+                            foreach (var item in (List<SelectListItem>)ViewBag.ClientOptions)
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Assigned To</label>
+                    <input id="filterAssignedTo" class="form-control" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Task Type</label>
+                    <select id="filterTaskType" class="form-select">
+                        <option value="">All</option>
+                        @if (ViewBag.TaskTypeOptions != null)
+                        {
+                            foreach (var item in (List<string>)ViewBag.TaskTypeOptions)
+                            {
+                                <option value="@item">@item</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select id="filterStatus" class="form-select">
+                        <option value="">All</option>
+                        @if (ViewBag.TaskStatusOptions != null)
+                        {
+                            foreach (var item in (List<string>)ViewBag.TaskStatusOptions)
+                            {
+                                <option value="@item">@item</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Frequency</label>
+                    <select id="filterFrequency" class="form-select">
+                        <option value="">All</option>
+                        @if (ViewBag.TaskFrequencyOptions != null)
+                        {
+                            foreach (var item in (List<string>)ViewBag.TaskFrequencyOptions)
+                            {
+                                <option value="@item">@item</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="button" id="btnApplyFilters" class="btn btn-primary w-100">Apply</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">Calendar</h5>
+        </div>
+        <div class="card-body">
+            <div id="allTaskCalendar"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="taskEventModal" tabindex="-1" aria-labelledby="taskEventModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content shadow">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskEventModalLabel">Task Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small mb-1">Client</label>
+                        <div id="modalClientName" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small mb-1">Task Name</label>
+                        <div id="modalTaskName" class="fw-semibold"></div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Type</label>
+                        <div id="modalTaskType"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Status</label>
+                        <div id="modalStatus"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Assigned To</label>
+                        <div id="modalAssignedTo"></div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Frequency</label>
+                        <div id="modalFrequency"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Due Day</label>
+                        <div id="modalDueDay"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Delivery</label>
+                        <div id="modalDelivery"></div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Occurrence Date</label>
+                        <div id="modalOccurrenceDate"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Next Due Date</label>
+                        <div id="modalNextDueDate"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Last Completed</label>
+                        <div id="modalLastCompletedDate"></div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label text-muted small mb-1">Notes</label>
+                        <div id="modalNotes" class="border rounded p-2 bg-light-subtle" style="min-height:60px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a id="modalViewClientLink" href="#" class="btn btn-primary">Open Client</a>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const calendarEl = document.getElementById('allTaskCalendar');
+            const modalEl = document.getElementById('taskEventModal');
+            const taskEventModal = new bootstrap.Modal(modalEl);
+
+            const setText = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value && value.toString().trim() !== '' ? value : '-';
+            };
+
+            const buildUrl = (fetchInfo) => {
+                const clientId = document.getElementById('filterClientId').value;
+                const assignedTo = document.getElementById('filterAssignedTo').value;
+                const taskType = document.getElementById('filterTaskType').value;
+                const status = document.getElementById('filterStatus').value;
+                const frequency = document.getElementById('filterFrequency').value;
+
+                  let url = '@Url.Action("CalendarEvents", "Client")' +
+        '?start=' + encodeURIComponent(fetchInfo.startStr) +
+        '&end=' + encodeURIComponent(fetchInfo.endStr);
+
+                if (clientId) url += '&clientId=' + encodeURIComponent(clientId);
+                if (assignedTo) url += '&assignedTo=' + encodeURIComponent(assignedTo);
+                if (taskType) url += '&taskType=' + encodeURIComponent(taskType);
+                if (status) url += '&status=' + encodeURIComponent(status);
+                if (frequency) url += '&frequency=' + encodeURIComponent(frequency);
+
+                return url;
+            };
+
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                height: 800,
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listMonth'
+                },
+                events: function (fetchInfo, successCallback, failureCallback) {
+                    fetch(buildUrl(fetchInfo))
+                        .then(r => r.json())
+                        .then(data => successCallback(data))
+                        .catch(err => failureCallback(err));
+                },
+                eventClick: function (info) {
+                    const p = info.event.extendedProps || {};
+
+                    setText('modalClientName', p.shortName || p.clientName);
+                    setText('modalTaskName', p.taskName);
+                    setText('modalTaskType', p.taskType);
+                    setText('modalAssignedTo', p.assignedTo);
+                    setText('modalFrequency', p.frequency);
+                    setText('modalDueDay', p.dueDay);
+                    setText('modalDelivery', p.deliveryMethod);
+                    setText('modalOccurrenceDate', info.event.startStr);
+                    setText('modalNextDueDate', p.nextDueDate);
+                    setText('modalLastCompletedDate', p.lastCompletedDate);
+                    setText('modalNotes', p.notes);
+
+                    const statusEl = document.getElementById('modalStatus');
+                    if (statusEl) {
+                        const status = (p.status || '').toLowerCase();
+                        let badgeClass = 'bg-secondary';
+
+                        if (status === 'active' || status === 'pending') badgeClass = 'bg-warning text-dark';
+                        if (status === 'completed') badgeClass = 'bg-success';
+                        if (status === 'in progress') badgeClass = 'bg-primary';
+                        if (status === 'overdue') badgeClass = 'bg-danger';
+
+                        statusEl.innerHTML = `<span class="badge ${badgeClass}">${p.status || '-'}</span>`;
+                    }
+
+                    const viewClientLink = document.getElementById('modalViewClientLink');
+                    if (viewClientLink && p.clientId) {
+                        viewClientLink.href = '/Client/Details/' + p.clientId;
+                    }
+
+                    taskEventModal.show();
+                }
+            });
+
+            calendar.render();
+
+            document.getElementById('btnApplyFilters').addEventListener('click', function () {
+                calendar.refetchEvents();
+            });
+        });
+    </script>
+
+    <style>
+        #allTaskCalendar {
+            max-width: 100%;
+        }
+
+        .fc .fc-toolbar-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        .fc-event {
+            cursor: pointer;
+        }
+    </style>
+}

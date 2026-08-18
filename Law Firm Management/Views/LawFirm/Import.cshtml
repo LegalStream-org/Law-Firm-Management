@@ -1,0 +1,29 @@
+﻿@{
+    ViewData["Title"] = "Import Law Firms";
+}
+
+<h2>Import Law Firms</h2>
+
+<form asp-action="Import" asp-controller="LawFirm" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+
+    <div class="mb-3">
+        <label for="file" class="form-label">CSV File</label>
+        <input type="file" name="file" class="form-control" accept=".csv" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Import</button>
+    <a asp-action="DownloadLawFirmTemplate" class="btn btn-outline-secondary">Download Template</a>
+</form>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success mt-3">@TempData["Success"]</div>
+}
+
+@if (TempData["Errors"] != null)
+{
+    <div class="alert alert-warning mt-3">
+        @Html.Raw(TempData["Errors"])
+    </div>
+}

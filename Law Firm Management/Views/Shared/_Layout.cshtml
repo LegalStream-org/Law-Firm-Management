@@ -1,0 +1,628 @@
+﻿@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Vendor Management</title>
+
+    <link rel="icon" type="image/png" sizes="32x32" href="~/favicon.png" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Law_Firm_Management.styles.css" asp-append-version="true" />
+
+    <style>
+        :root {
+            --sidebar-width: 255px;
+            --sidebar-collapsed-width: 78px;
+            --nav-blue: #1A365D;
+            --nav-blue-dark: #0F233F;
+            --page-bg: #f4f6fb;
+            --text-main: #111827;
+            --card-bg: #ffffff;
+            --card-border: rgba(15, 23, 42, .06);
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--page-bg);
+            color: var(--text-main);
+            transition: background-color .25s ease, color .25s ease;
+        }
+
+            body.dark-mode {
+                --page-bg: #0f172a;
+                --text-main: #e5e7eb;
+                --card-bg: #020617;
+                --card-border: #1e293b;
+            }
+
+        .sidebar {
+            position: fixed;
+            inset: 0 auto 0 0;
+            width: var(--sidebar-width);
+            background: var(--nav-blue);
+            border-right: 3px solid var(--nav-blue-dark);
+            z-index: 1050;
+            transition: width .2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body.sidebar-collapsed .sidebar {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        .sidebar-header {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 16px;
+            border-bottom: 1px solid rgba(255,255,255,.12);
+        }
+
+        .sidebar-logo {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+            .sidebar-logo img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+        .sidebar-title {
+            color: #fff;
+            font-size: 17px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .sidebar-nav {
+            padding: 14px 10px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .nav-section-title {
+            color: #9fb3d1;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            margin: 14px 10px 7px;
+            text-transform: uppercase;
+        }
+
+        .side-link,
+        .side-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #dbe2ef;
+            text-decoration: none;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            font-size: 14px;
+            transition: background-color .15s ease, color .15s ease;
+        }
+
+        .side-dropdown-toggle {
+            width: 100%;
+            border: none;
+            background: transparent;
+            text-align: left;
+        }
+
+            .side-link:hover,
+            .side-dropdown-toggle:hover {
+                color: #fff;
+                background: rgba(255,255,255,.12);
+            }
+
+            .side-link.active,
+            .side-dropdown-toggle.active {
+                color: #fff;
+                background: rgba(255,255,255,.26);
+                font-weight: 600;
+            }
+
+        .nav-icon {
+            width: 24px;
+            text-align: center;
+            font-size: 17px;
+            flex-shrink: 0;
+        }
+
+        .side-caret {
+            margin-left: auto;
+            transition: transform .2s ease;
+        }
+
+        .side-dropdown.open .side-caret {
+            transform: rotate(90deg);
+        }
+
+        .side-submenu {
+            display: none;
+            padding-left: 14px;
+            margin-bottom: 8px;
+        }
+
+        .side-dropdown.open .side-submenu {
+            display: block;
+        }
+
+        .side-submenu .side-link {
+            font-size: 13px;
+            padding: 8px 12px;
+            margin-bottom: 3px;
+        }
+
+        .sidebar-footer {
+            padding: 12px 10px;
+            border-top: 1px solid rgba(255,255,255,.12);
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: #fff;
+            background: rgba(255,255,255,.08);
+            margin-bottom: 10px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.1;
+        }
+
+        .user-role {
+            font-size: 11px;
+            color: #cbd5e1;
+        }
+
+        .sidebar-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .sidebar-btn {
+            border: 1px solid rgba(255,255,255,.25);
+            color: #fff;
+            background: transparent;
+            border-radius: 999px;
+            padding: 7px 10px;
+            font-size: 13px;
+            width: 100%;
+        }
+
+            .sidebar-btn:hover {
+                background: rgba(255,255,255,.13);
+                color: #fff;
+            }
+
+        body.sidebar-collapsed .sidebar-title,
+        body.sidebar-collapsed .nav-section-title,
+        body.sidebar-collapsed .nav-text,
+        body.sidebar-collapsed .user-details,
+        body.sidebar-collapsed .theme-text,
+        body.sidebar-collapsed .side-caret,
+        body.sidebar-collapsed .side-submenu {
+            display: none;
+        }
+
+        body.sidebar-collapsed .sidebar-actions {
+            flex-direction: column;
+        }
+
+        .main-shell {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: margin-left .2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body.sidebar-collapsed .main-shell {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+
+        .topbar {
+            height: 64px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 22px;
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .topbar-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .topbar-subtitle {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        body.dark-mode .topbar-subtitle {
+            color: #9ca3af;
+        }
+
+        .page-content {
+            padding: 22px;
+            flex: 1;
+        }
+
+        .content-card {
+            background-color: var(--card-bg);
+            border-radius: .65rem;
+            padding: 1.25rem 1.5rem;
+            box-shadow: 0 .125rem .5rem rgba(15, 23, 42, .08);
+            border: 1px solid var(--card-border);
+        }
+
+        footer.footer {
+            background-color: var(--card-bg);
+            border-top: 1px solid var(--card-border);
+            color: #6b7280;
+            padding: 10px 22px;
+            font-size: 13px;
+        }
+
+        body.dark-mode footer.footer {
+            color: #9ca3af;
+        }
+
+        body.dark-mode .form-control,
+        body.dark-mode .form-select,
+        body.dark-mode textarea.form-control {
+            background-color: #020617;
+            color: #e5e7eb;
+            border-color: #1f2937;
+        }
+
+        body.dark-mode .table {
+            color: #e5e7eb !important;
+        }
+
+            body.dark-mode .table thead {
+                background-color: #111827 !important;
+            }
+
+        body.dark-mode .table-striped tbody tr:nth-of-type(odd) {
+            background-color: #0f172a !important;
+        }
+
+        body.dark-mode .table-striped tbody tr:nth-of-type(even) {
+            background-color: #1e293b !important;
+        }
+
+        body.dark-mode .table-hover tbody tr:hover {
+            background-color: #334155 !important;
+        }
+
+        @@media (max-width: 768px) {
+            .sidebar {
+                width: var(--sidebar-collapsed-width);
+            }
+
+            .sidebar-title,
+            .nav-section-title,
+            .nav-text,
+            .user-details,
+            .theme-text,
+            .side-caret,
+            .side-submenu {
+                display: none;
+            }
+
+            .main-shell {
+                margin-left: var(--sidebar-collapsed-width);
+            }
+
+            .topbar {
+                padding: 0 14px;
+            }
+
+            .page-content {
+                padding: 14px;
+            }
+        }
+    </style>
+
+
+
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <img src="@Url.Content("~/favicon.png")" alt="LegalStream" />
+            </div>
+            <div class="sidebar-title">Vendor Management</div>
+        </div>
+
+        <nav class="sidebar-nav">
+
+            <div class="nav-section-title">Portal</div>
+
+            <a class="side-link" href="/">
+                <span class="nav-icon">🌐</span>
+                <span class="nav-text">Operations Portal</span>
+            </a>
+
+            <div class="nav-section-title">Main</div>
+
+            <a class="side-link @(currentController == "Home" ? "active" : "")"
+               asp-controller="Home"
+               asp-action="Index">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-text">Dashboard</span>
+            </a>
+
+            
+
+            <div class="nav-section-title">Management</div>
+
+            <div class="side-dropdown @(currentController == "LawFirm" ? "open" : "")">
+                <button type="button"
+                        class="side-dropdown-toggle @(currentController == "LawFirm" ? "active" : "")">
+                    <span class="nav-icon">🏛️</span>
+                    <span class="nav-text">Law Firms</span>
+                    <span class="side-caret">›</span>
+                </button>
+
+                <div class="side-submenu">
+                    <a class="side-link @(currentController == "LawFirm" && currentAction == "Index" ? "active" : "")"
+                       asp-controller="LawFirm"
+                       asp-action="Index">
+                        <span class="nav-icon">📋</span>
+                        <span class="nav-text">Firm List</span>
+                    </a>
+
+                    <a class="side-link @(currentController == "LawFirm" && currentAction == "Create" ? "active" : "")"
+                       asp-controller="LawFirm"
+                       asp-action="Create">
+                        <span class="nav-icon">➕</span>
+                        <span class="nav-text">Add New Firm</span>
+                    </a>
+
+                    <a class="side-link @(currentController == "LawFirm" && currentAction == "Import" ? "active" : "")"
+                       asp-controller="LawFirm"
+                       asp-action="Import">
+                        <span class="nav-icon">📥</span>
+                        <span class="nav-text">Import Firms</span>
+                    </a>
+
+                    <a class="side-link @(currentController == "LawFirm" && currentAction == "ImportContacts" ? "active" : "")"
+                       asp-controller="LawFirm"
+                       asp-action="ImportContacts">
+                        <span class="nav-icon">👥</span>
+                        <span class="nav-text">Import Contacts</span>
+                    </a>
+
+                    <a class="side-link @(currentController == "LawFirm" && currentAction == "ImportStateMappings" ? "active" : "")"
+                       asp-controller="LawFirm"
+                       asp-action="ImportStateMappings">
+                        <span class="nav-icon">🗺️</span>
+                        <span class="nav-text">Import State Mappings</span>
+                    </a>
+
+                    <a class="side-link"
+                       asp-controller="LawFirm"
+                       asp-action="Export">
+                        <span class="nav-icon">📤</span>
+                        <span class="nav-text">Export Firm List</span>
+                    </a>
+
+                    <a class="side-link @(currentController == "LawFirm" && currentAction == "PortfolioReport" ? "active" : "")"
+                       asp-controller="LawFirm"
+                       asp-action="PortfolioReport">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">Firm Portfolio Report</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="side-dropdown @(currentController == "Client" ? "open" : "")">
+                <button type="button"
+                        class="side-dropdown-toggle @(currentController == "Client" ? "active" : "")">
+                    <span class="nav-icon">🏢</span>
+                    <span class="nav-text">Clients</span>
+                    <span class="side-caret">›</span>
+                </button>
+
+                <div class="side-submenu">
+                    <a class="side-link @(currentController == "Client" && currentAction == "Index" ? "active" : "")"
+                       asp-controller="Client"
+                       asp-action="Index">
+                        <span class="nav-icon">📋</span>
+                        <span class="nav-text">Client List</span>
+                    </a>
+
+                    <a class="side-link @(currentController == "Client" && currentAction == "Create" ? "active" : "")"
+                       asp-controller="Client"
+                       asp-action="Create">
+                        <span class="nav-icon">➕</span>
+                        <span class="nav-text">Add New Client</span>
+                    </a>
+
+                    <a class="side-link @(currentController == "Client" && currentAction == "Calendar" ? "active" : "")"
+                       asp-controller="Client"
+                       asp-action="Calendar">
+                        <span class="nav-icon">📅</span>
+                        <span class="nav-text">Task Calendar</span>
+                    </a>
+
+                    <a class="side-link @(currentController == "Client" && currentAction == "Import" ? "active" : "")"
+                       asp-controller="Client"
+                       asp-action="Import">
+                        <span class="nav-icon">📥</span>
+                        <span class="nav-text">Import Clients</span>
+                    </a>
+
+                    <a class="side-link @(currentController == "Client" && currentAction == "ImportContacts" ? "active" : "")"
+                       asp-controller="Client"
+                       asp-action="ImportContacts">
+                        <span class="nav-icon">👥</span>
+                        <span class="nav-text">Import Contacts</span>
+                    </a>
+
+                    <a class="side-link @(currentController == "Client" && currentAction == "ImportPortfolio" ? "active" : "")"
+                       asp-controller="Client"
+                       asp-action="ImportPortfolio">
+                        <span class="nav-icon">📦</span>
+                        <span class="nav-text">Import Portfolio</span>
+                    </a>
+
+                    <a class="side-link"
+                       asp-controller="Client"
+                       asp-action="Export">
+                        <span class="nav-icon">📤</span>
+                        <span class="nav-text">Export Client List</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="user-avatar">👤</div>
+                <div class="user-details">
+                    <div class="user-name">
+                        @(User?.Identity?.Name ?? "Signed In User")
+                    </div>
+                    <div class="user-role">Vendor Management</div>
+                </div>
+            </div>
+
+            <div class="sidebar-actions">
+                <button type="button" class="sidebar-btn" id="collapseSidebar" title="Collapse sidebar">
+                    ⇔
+                </button>
+
+                <button type="button" class="sidebar-btn" id="themeToggle" title="Toggle theme">
+                    <span id="themeToggleIcon">🌙</span>
+                    <span class="theme-text"> Theme</span>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-shell">
+        <header class="topbar">
+            <div>
+                <div class="topbar-title">@ViewData["Title"]</div>
+                <div class="topbar-subtitle">Law firm, client, import, export, and portfolio management</div>
+            </div>
+        </header>
+
+        <main class="page-content">
+            <div class="content-card">
+                @RenderBody()
+            </div>
+        </main>
+
+        <footer class="footer">
+            &copy; 2026 - Vendor Management
+        </footer>
+    </div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        (function () {
+            const body = document.body;
+            const toggleButton = document.getElementById("themeToggle");
+            const iconSpan = document.getElementById("themeToggleIcon");
+            const collapseSidebar = document.getElementById("collapseSidebar");
+
+            const themeKey = "lfm-theme";
+            const sidebarKey = "lfm-sidebar";
+
+            function applyTheme(theme) {
+                if (theme === "dark") {
+                    body.classList.add("dark-mode");
+                    if (iconSpan) iconSpan.textContent = "☀️";
+                } else {
+                    body.classList.remove("dark-mode");
+                    if (iconSpan) iconSpan.textContent = "🌙";
+                }
+            }
+
+            function applySidebar(state) {
+                if (state === "collapsed") {
+                    body.classList.add("sidebar-collapsed");
+                } else {
+                    body.classList.remove("sidebar-collapsed");
+                }
+            }
+
+            applyTheme(localStorage.getItem(themeKey) || "light");
+            applySidebar(localStorage.getItem(sidebarKey) || "expanded");
+
+            if (toggleButton) {
+                toggleButton.addEventListener("click", function () {
+                    const newTheme = body.classList.contains("dark-mode") ? "light" : "dark";
+                    localStorage.setItem(themeKey, newTheme);
+                    applyTheme(newTheme);
+                });
+            }
+
+            if (collapseSidebar) {
+                collapseSidebar.addEventListener("click", function () {
+                    const newState = body.classList.contains("sidebar-collapsed") ? "expanded" : "collapsed";
+                    localStorage.setItem(sidebarKey, newState);
+                    applySidebar(newState);
+                });
+            }
+
+            document.querySelectorAll(".side-dropdown-toggle").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    const parent = btn.closest(".side-dropdown");
+                    if (!parent) return;
+                    parent.classList.toggle("open");
+                });
+            });
+        })();
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
