@@ -303,6 +303,104 @@
     </tbody>
 </table>
 
+@* Aug 19 - Accounting Mapping, the Client-side equivalent of LawFirm's own "Accounting Mapping"
+   card. Deliberately matches THIS page's own style (h4/hr/table, mirroring the Portfolio section
+   right above) rather than LawFirm Edit's Bootstrap-card layout - a different page's convention,
+   not this one's. *@
+<h4 class="mb-3">Accounting Mapping</h4>
+
+<form asp-action="AddAccountingMap" method="post" class="mb-4">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="ClientId" value="@Model.ClientId" />
+
+    <div class="row g-2">
+        <div class="col-md-6">
+            <select name="AccountingClientName" class="form-select">
+                <option value="">Select Client</option>
+                @foreach (var c in Model.AccountingClientOptions)
+                {
+                    <option value="@c">@c</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="isActive" class="form-select">
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Add Mapping</button>
+        </div>
+    </div>
+</form>
+
+<table class="table table-striped table-hover mb-4">
+    <thead>
+        <tr>
+            <th>Accounting Client</th>
+            <th>Active</th>
+            <th style="width:160px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.AccountingMaps == null || !Model.AccountingMaps.Any())
+        {
+            <tr>
+                <td colspan="3" class="text-center">No accounting mappings found.</td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var m in Model.AccountingMaps)
+            {
+                var formId = $"acctMap_{m.ClientAccountingMapId}";
+
+                <tr>
+                    <td>
+                        <select name="accountingClientName" form="@formId" class="form-select form-select-sm">
+                            @foreach (var c in Model.AccountingClientOptions)
+                            {
+                                <option value="@c" selected="@(c == m.AccountingClientName)">@c</option>
+                            }
+                        </select>
+                    </td>
+                    <td class="text-center">
+                        @if (m.IsActive)
+                        {
+                            <input type="checkbox" name="isActive" value="true" form="@formId" checked="checked" />
+                        }
+                        else
+                        {
+                            <input type="checkbox" name="isActive" value="true" form="@formId" />
+                        }
+                        <input type="hidden" name="isActive" value="false" form="@formId" />
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <form id="@formId" asp-action="UpdateAccountingMap" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="clientAccountingMapId" value="@m.ClientAccountingMapId" />
+                                <input type="hidden" name="clientId" value="@Model.ClientId" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                            </form>
+                            <form asp-action="DeleteAccountingMap" method="post" class="d-inline"
+                                  onsubmit="return confirm('Delete this accounting mapping?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="clientAccountingMapId" value="@m.ClientAccountingMapId" />
+                                <input type="hidden" name="clientId" value="@Model.ClientId" />
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+<hr />
+
 <h4 class="mb-3">Notes</h4>
 
 <form asp-action="AddNote" method="post" class="mb-4">

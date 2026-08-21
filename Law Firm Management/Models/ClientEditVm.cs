@@ -39,6 +39,20 @@ namespace Law_Firm_Management.Models
         public List<string> ContactTypeOptions { get; set; } = new();
 
         public List<ClientPortfolioVm> Portfolios { get; set; } = new();
+
+        /// <summary>
+        /// Aug 19 - Client-side equivalent of LawFirm's Accounting Mapping card. See
+        /// Create_ClientAccountingMap_Table.sql for the schema and the duplicate-mapping guard built
+        /// in from the start (a real gap found in LawFirmAccountingMap's own screen while building
+        /// this - left alone there per direct instruction, not repeated here).
+        /// </summary>
+        public List<ClientAccountingMapVm> AccountingMaps { get; set; } = new();
+
+        /// <summary>Distinct Client names seen across the Accounting app's own data - the Add-mapping
+        /// dropdown's options, same "every historical name, unfiltered" convention LawFirm's own
+        /// AccountingFirmOptions already uses.</summary>
+        public List<string> AccountingClientOptions { get; set; } = new();
+
         public List<string> NoteOptions { get; set; } = new()
         {
             "General",
