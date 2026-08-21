@@ -1168,6 +1168,19 @@ GROUP BY
             // Column names confirmed (Aug 19) directly against INFORMATION_SCHEMA.COLUMNS -
             // FirmRemits.Client, FirmCost.Client, and FirmInvoices.Client all genuinely exist under
             // that exact name/casing. No longer a guess.
+            //
+            // Aug 21 fix - real bug found live after the canonical self-map backfill (EnsureCanonical-
+            // AccountingMap / Backfill_ClientAccountingMap_CanonicalSelfNames.sql): a client's own
+            // self-mapped name (e.g. "A/R A Group") can legitimately have ZERO real Accounting
+            // transaction history under that exact string - so it was never in this list. Edit.cshtml's
+            // per-row <select> for an EXISTING mapping only matches on options from this exact list
+            // (`selected="@(c == m.AccountingClientName)"`) - if the current value isn't present as an
+            // option, NO option matches, and the browser silently defaults the <select> to its first
+            // (alphabetically-first) option instead. The underlying ClientAccountingMap row was always
+            // correct - this was a pure display bug, the dropdown showing a different name than what's
+            // actually stored. Fixed by unioning in every currently-active AccountingClientName from
+            // ClientAccountingMap itself, so any mapped value - self-mapped or transaction-sourced - is
+            // always guaranteed to appear as a real, matchable option.
             vm.AccountingMaps = GetAccountingMaps(id);
             vm.AccountingClientOptions = new List<string>();
 
@@ -1181,6 +1194,8 @@ SELECT DISTINCT ClientName FROM (
     SELECT Client   AS ClientName FROM Accounting_Data.dbo.FirmCost
     UNION
     SELECT Client   AS ClientName FROM Accounting_Data.dbo.FirmInvoices
+    UNION
+    SELECT AccountingClientName AS ClientName FROM dbo.ClientAccountingMap WHERE IsActive = 1
 ) b
 WHERE ClientName IS NOT NULL AND LTRIM(RTRIM(ClientName)) <> ''
 ORDER BY ClientName;", conn2);
