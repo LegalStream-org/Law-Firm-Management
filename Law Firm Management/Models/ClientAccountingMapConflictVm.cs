@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Law_Firm_Management.Models
 {
     /// <summary>
@@ -22,12 +20,5 @@ namespace Law_Firm_Management.Models
         /// <summary>Client(s) currently holding this mapping, already formatted for display - see
         /// ClientController.DescribeConflictOwners.</summary>
         public string? ExistingClientName { get; set; }
-
-        /// <summary>Built here, not in the view, so controller and modal can't drift on wording.</summary>
-        [JsonIgnore]
-        public string Message =>
-            $"This accounting mapping is already associated with client \"{ExistingClientName}\". " +
-            $"If you continue, the existing mapping will be deleted from \"{ExistingClientName}\" " +
-            "and assigned to the current client. Do you want to continue?";
     }
 }

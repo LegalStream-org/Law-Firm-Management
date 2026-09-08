@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Law_Firm_Management.Models
 {
     /// <summary>
@@ -23,12 +21,5 @@ namespace Law_Firm_Management.Models
         /// LawFirmController.DescribeConflictOwners. More than one is genuinely possible here: this
         /// table predates any duplicate guard.</summary>
         public string? ExistingFirmName { get; set; }
-
-        /// <summary>Built here, not in the view, so controller and modal can't drift on wording.</summary>
-        [JsonIgnore]
-        public string Message =>
-            $"This accounting mapping is already associated with law firm \"{ExistingFirmName}\". " +
-            $"If you continue, the existing mapping will be deleted from \"{ExistingFirmName}\" " +
-            "and assigned to the current law firm. Do you want to continue?";
     }
 }

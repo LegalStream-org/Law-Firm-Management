@@ -415,7 +415,12 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-0">@pending.Message</p>
+                    <p class="mb-0">
+                        This accounting mapping is already associated with client
+                        <strong>@pending.ExistingClientName</strong>. If you continue, the existing
+                        mapping will be deleted from <strong>@pending.ExistingClientName</strong> and
+                        assigned to the current client. Do you want to continue?
+                    </p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
