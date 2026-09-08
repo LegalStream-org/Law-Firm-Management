@@ -314,7 +314,7 @@
                 </div>
             </div>
 
-            
+
 
             <div class="card shadow-sm mb-3">
                 <div class="card-header">
@@ -478,6 +478,95 @@
                                             <td>@p.PortfolioCode</td>
                                             <td>@p.ForwNo</td>
                                             <td>@(p.IsActive ? "Yes" : "No")</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            @* Aug 19 - Accounting Mapping, mirrors LawFirm Details' own version of this same feature
+               (list + Active toggle + Delete, no Add form, no editable name - those stay on the Edit
+               page). Deliberately following LawFirm Details' functional precedent for this specific
+               feature rather than the plainer, fully read-only Portfolio card just above - same
+               feature should behave the same way across entity types, even though an unrelated card
+               on this page happens to be simpler. Visual styling (card shadow-sm mb-3, table-sm
+               table-hover) matches this page's own convention, not LawFirm's. *@
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Accounting Mapping</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Accounting Client</th>
+                                    <th style="width:120px;">Active</th>
+                                    <th style="width:180px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.AccountingMaps == null || !Model.AccountingMaps.Any())
+                                {
+                                    <tr>
+                                        <td colspan="3" class="text-muted">No accounting mappings found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var m in Model.AccountingMaps)
+                                    {
+                                        var formId = $"detailsAcctMap_{m.ClientAccountingMapId}";
+
+                                        <tr>
+                                            <td>@m.AccountingClientName</td>
+
+                                            <td class="text-center">
+                                                @if (m.IsActive)
+                                                {
+                                                    <input type="checkbox" name="isActive" value="true" form="@formId" checked />
+                                                }
+                                                else
+                                                {
+                                                    <input type="checkbox" name="isActive" value="true" form="@formId" />
+                                                }
+
+                                                <input type="hidden" name="isActive" value="false" form="@formId" />
+                                                <input type="hidden" name="accountingClientName" value="@m.AccountingClientName" form="@formId" />
+                                            </td>
+
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <form id="@formId"
+                                                          asp-action="UpdateAccountingMap"
+                                                          asp-controller="Client"
+                                                          method="post"
+                                                          class="d-inline">
+                                                        @Html.AntiForgeryToken()
+
+                                                        <input type="hidden" name="clientAccountingMapId" value="@m.ClientAccountingMapId" />
+                                                        <input type="hidden" name="clientId" value="@Model.ClientId" />
+
+                                                        <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                                    </form>
+
+                                                    <form asp-action="DeleteAccountingMap"
+                                                          asp-controller="Client"
+                                                          method="post"
+                                                          class="d-inline"
+                                                          onsubmit="return confirm('Delete this accounting mapping?');">
+                                                        @Html.AntiForgeryToken()
+
+                                                        <input type="hidden" name="clientAccountingMapId" value="@m.ClientAccountingMapId" />
+                                                        <input type="hidden" name="clientId" value="@Model.ClientId" />
+
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </td>
                                         </tr>
                                     }
                                 }

@@ -199,6 +199,11 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
 
             AddAudit(newId, "Client", newId, "Insert", $"Created client {vm.ClientName}");
 
+            // #1/#2 (Aug 21) - auto-create the canonical self-map row so this client's own name is
+            // always resolvable through ClientAccountingMap from day one, not just via Client.ClientName
+            // directly. See EnsureCanonicalAccountingMap's own comment for the full reasoning.
+            EnsureCanonicalAccountingMap(newId, vm.ClientName);
+
             TempData["Message"] = "Client created.";
             return RedirectToAction(nameof(Edit), new { id = newId });
         }
@@ -226,6 +231,10 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
                 vm.Documents = GetDocuments(vm.ClientId);
                 return View(vm);
             }
+
+            // #3 (Aug 21) - fetched before the UPDATE below runs, so this is a real before/after
+            // comparison, not just the posted value on its own.
+            var oldClientName = GetClientNameById(vm.ClientId);
 
             using var conn = new SqlConnection(_connectionString);
             using var cmd = new SqlCommand(@"
@@ -266,6 +275,14 @@ WHERE ClientId = @ClientId;", conn);
             cmd.ExecuteNonQuery();
 
             AddAudit(vm.ClientId, "Client", vm.ClientId, "Update", $"Updated client {vm.ClientName}");
+
+            // #3 (Aug 21) - only auto-maps the new name when ClientName actually changed - not on
+            // every Edit save regardless. Old name's row is left alone; see
+            // EnsureCanonicalAccountingMap's own comment for why.
+            if (!string.Equals(oldClientName, vm.ClientName, StringComparison.Ordinal))
+            {
+                EnsureCanonicalAccountingMap(vm.ClientId, vm.ClientName);
+            }
 
             TempData["Message"] = "Client updated.";
             return RedirectToAction(nameof(Edit), new { id = vm.ClientId });
@@ -1142,6 +1159,54 @@ GROUP BY
             vm.TaskFrequencyOptions = TaskFrequencyOptions;
             vm.TaskStatusOptions = TaskStatusOptions;
             vm.DeliveryMethodOptions = DeliveryMethodOptions;
+
+            // Aug 19 - Client-side equivalent of LawFirmController's own "LOAD ACCOUNTING FIRMS"
+            // block. AccountingClientOptions pulls every distinct Client name ever seen across the
+            // Accounting app's own data - same unfiltered convention the Firm version uses, offered as
+            // a starting point for a new mapping, not a canonical/curated list.
+            //
+            // Column names confirmed (Aug 19) directly against INFORMATION_SCHEMA.COLUMNS -
+            // FirmRemits.Client, FirmCost.Client, and FirmInvoices.Client all genuinely exist under
+            // that exact name/casing. No longer a guess.
+            //
+            // Aug 21 fix - real bug found live after the canonical self-map backfill (EnsureCanonical-
+            // AccountingMap / Backfill_ClientAccountingMap_CanonicalSelfNames.sql): a client's own
+            // self-mapped name (e.g. "A/R A Group") can legitimately have ZERO real Accounting
+            // transaction history under that exact string - so it was never in this list. Edit.cshtml's
+            // per-row <select> for an EXISTING mapping only matches on options from this exact list
+            // (`selected="@(c == m.AccountingClientName)"`) - if the current value isn't present as an
+            // option, NO option matches, and the browser silently defaults the <select> to its first
+            // (alphabetically-first) option instead. The underlying ClientAccountingMap row was always
+            // correct - this was a pure display bug, the dropdown showing a different name than what's
+            // actually stored. Fixed by unioning in every currently-active AccountingClientName from
+            // ClientAccountingMap itself, so any mapped value - self-mapped or transaction-sourced - is
+            // always guaranteed to appear as a real, matchable option.
+            vm.AccountingMaps = GetAccountingMaps(id);
+            vm.AccountingClientOptions = new List<string>();
+
+            using (var conn2 = new SqlConnection(_connectionString))
+            {
+                conn2.Open();
+                using var acctCmd = new SqlCommand(@"
+SELECT DISTINCT ClientName FROM (
+    SELECT Client   AS ClientName FROM Accounting_Data.dbo.FirmRemits
+    UNION
+    SELECT Client   AS ClientName FROM Accounting_Data.dbo.FirmCost
+    UNION
+    SELECT Client   AS ClientName FROM Accounting_Data.dbo.FirmInvoices
+    UNION
+    SELECT AccountingClientName AS ClientName FROM dbo.ClientAccountingMap WHERE IsActive = 1
+) b
+WHERE ClientName IS NOT NULL AND LTRIM(RTRIM(ClientName)) <> ''
+ORDER BY ClientName;", conn2);
+
+                using var acctRdr = acctCmd.ExecuteReader();
+                while (acctRdr.Read())
+                {
+                    vm.AccountingClientOptions.Add(acctRdr["ClientName"].ToString());
+                }
+            }
+
             vm.Contacts = GetContacts(id);
             vm.Notes = GetNotes(id);
             vm.AuditHistory = GetAuditHistory(id);
@@ -1157,6 +1222,274 @@ GROUP BY
             vm.DeliveryMethodOptions = DeliveryMethodOptions;
 
             return vm;
+        }
+
+        // Aug 19 - Client-side equivalent of LawFirmController's GetAccountingMaps, same shape.
+        private List<ClientAccountingMapVm> GetAccountingMaps(int clientId)
+        {
+            var list = new List<ClientAccountingMapVm>();
+
+            using var conn = new SqlConnection(_connectionString);
+            using var cmd = new SqlCommand(@"
+        SELECT
+            ClientAccountingMapId,
+            AccountingClientName,
+            IsActive
+        FROM dbo.ClientAccountingMap
+        WHERE ClientId = @ClientId
+        ORDER BY AccountingClientName;", conn);
+
+            cmd.Parameters.AddWithValue("@ClientId", clientId);
+
+            conn.Open();
+
+            using var rdr = cmd.ExecuteReader();
+
+            while (rdr.Read())
+            {
+                list.Add(new ClientAccountingMapVm
+                {
+                    ClientAccountingMapId = Convert.ToInt32(rdr["ClientAccountingMapId"]),
+                    AccountingClientName = rdr["AccountingClientName"]?.ToString(),
+                    IsActive = Convert.ToBoolean(rdr["IsActive"])
+                });
+            }
+
+            return list;
+        }
+
+        /// <summary>
+        /// Aug 19 - checks whether accountingClientName is already actively mapped to a DIFFERENT
+        /// client. Real gap found in LawFirmAccountingMap's own equivalent screen while building this
+        /// (AddAccountingMap/UpdateAccountingMap there do a plain INSERT/UPDATE with no such check,
+        /// and GetAccountingMaps only ever queries by the current LawFirmId - so a conflicting mapping
+        /// on a DIFFERENT firm is invisible from any single firm's own Edit page). Left as-is there
+        /// per direct instruction (judged low real-world risk); built in here from the start instead
+        /// of inherited. excludeMapId lets Update check against every OTHER row without flagging a
+        /// row against itself.
+        /// </summary>
+        private string? FindConflictingClientMap(string accountingClientName, int excludeMapId = 0)
+        {
+            using var conn = new SqlConnection(_connectionString);
+            using var cmd = new SqlCommand(@"
+        SELECT TOP 1 c.ClientName
+        FROM dbo.ClientAccountingMap m
+        JOIN dbo.Client c ON c.ClientId = m.ClientId
+        WHERE m.AccountingClientName = @AccountingClientName
+          AND m.IsActive = 1
+          AND m.ClientAccountingMapId <> @ExcludeMapId;", conn);
+
+            cmd.Parameters.AddWithValue("@AccountingClientName", accountingClientName);
+            cmd.Parameters.AddWithValue("@ExcludeMapId", excludeMapId);
+
+            conn.Open();
+            var result = cmd.ExecuteScalar();
+            return result == null || result == DBNull.Value ? null : result.ToString();
+        }
+
+        /// <summary>
+        /// #1/#2/#3 (Aug 21) - ensures a Client's own canonical name always has a matching,
+        /// resolvable row in ClientAccountingMap, so any future lookup ("given this raw
+        /// accounting-side ClientName, what's the real Client?") is always a single join through
+        /// this table - never a two-step "check Client.ClientName first, then fall back to the
+        /// map" special case someone has to remember to implement correctly every time. Deliberately
+        /// diverges from LawFirmAccountingMap's shape (alias-only) - that table already has real data
+        /// and possibly existing consumers assuming alias-only, so changing it now risks breaking
+        /// something unseen; ClientAccountingMap is brand new, so this is the one moment to get the
+        /// shape right before habits form around it.
+        ///
+        /// Called from Create (new client) and from Edit only when ClientName actually changed (a
+        /// rename) - never unconditionally on every Edit save. On rename, the OLD name's row is
+        /// deliberately left exactly as-is, not updated or deactivated - historical Accounting
+        /// transactions created before the rename still carry the old name string and need to keep
+        /// resolving through it forever. The new name just gets its own additional row alongside it.
+        /// Same add-don't-destructively-edit philosophy as reverse-and-repost elsewhere in this
+        /// project, applied here to a lookup table instead of a JE.
+        ///
+        /// Idempotent two ways: (a) if this exact ClientId+name is already an active row, no-op - no
+        /// duplicate row for the same client; (b) if the name is already actively claimed by a
+        /// DIFFERENT client, refuses rather than silently creating a conflicting mapping - reuses
+        /// FindConflictingClientMap, the exact same guard AddAccountingMap already relies on.
+        /// </summary>
+        private void EnsureCanonicalAccountingMap(int clientId, string? clientName)
+        {
+            if (clientId <= 0 || string.IsNullOrWhiteSpace(clientName)) return;
+
+            using (var conn = new SqlConnection(_connectionString))
+            using (var checkCmd = new SqlCommand(@"
+SELECT COUNT(*) FROM dbo.ClientAccountingMap
+WHERE ClientId = @ClientId AND AccountingClientName = @AccountingClientName AND IsActive = 1;", conn))
+            {
+                checkCmd.Parameters.AddWithValue("@ClientId", clientId);
+                checkCmd.Parameters.AddWithValue("@AccountingClientName", clientName);
+                conn.Open();
+                var alreadyMapped = (int)checkCmd.ExecuteScalar();
+                if (alreadyMapped > 0) return;
+            }
+
+            var conflict = FindConflictingClientMap(clientName);
+            if (conflict != null)
+            {
+                // A different client already actively claims this exact name - refuse rather than
+                // create a second active mapping for it. This runs from Create/Edit (the client save
+                // has already succeeded by this point), not a dedicated mapping action, so this
+                // surfaces as a non-blocking warning rather than failing the whole save.
+                TempData["AccountingMapWarning"] =
+                    $"Note: could not auto-map \"{clientName}\" as this client's own accounting name - " +
+                    $"it's already actively mapped to {conflict}.";
+                return;
+            }
+
+            using var insertConn = new SqlConnection(_connectionString);
+            using var insertCmd = new SqlCommand(@"
+INSERT INTO dbo.ClientAccountingMap
+(
+    ClientId,
+    AccountingClientName,
+    IsActive,
+    CreatedDate
+)
+VALUES
+(
+    @ClientId,
+    @AccountingClientName,
+    1,
+    GETDATE()
+);", insertConn);
+
+            insertCmd.Parameters.AddWithValue("@ClientId", clientId);
+            insertCmd.Parameters.AddWithValue("@AccountingClientName", clientName);
+
+            insertConn.Open();
+            insertCmd.ExecuteNonQuery();
+        }
+
+        /// <summary>
+        /// #3 (Aug 21) - fetches a Client's current name before an Edit's UPDATE runs, so the rename
+        /// check in Edit() has a real before/after to compare, not just the posted (new) value alone.
+        /// </summary>
+        private string? GetClientNameById(int clientId)
+        {
+            using var conn = new SqlConnection(_connectionString);
+            using var cmd = new SqlCommand("SELECT ClientName FROM dbo.Client WHERE ClientId = @ClientId;", conn);
+            cmd.Parameters.AddWithValue("@ClientId", clientId);
+            conn.Open();
+            return cmd.ExecuteScalar() as string;
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult AddAccountingMap(int clientId, string accountingClientName, bool isActive = true)
+        {
+            if (clientId <= 0 || string.IsNullOrWhiteSpace(accountingClientName))
+            {
+                TempData["Error"] = "Please select an accounting client.";
+                return RedirectToAction(nameof(Edit), new { id = clientId });
+            }
+
+            if (isActive)
+            {
+                var conflict = FindConflictingClientMap(accountingClientName);
+                if (conflict != null)
+                {
+                    TempData["Error"] = $"\"{accountingClientName}\" is already mapped to {conflict}. " +
+                        "Remove that mapping first if it should move to this client instead.";
+                    return RedirectToAction(nameof(Edit), new { id = clientId });
+                }
+            }
+
+            using var conn = new SqlConnection(_connectionString);
+            using var cmd = new SqlCommand(@"
+INSERT INTO dbo.ClientAccountingMap
+(
+    ClientId,
+    AccountingClientName,
+    IsActive,
+    CreatedDate
+)
+VALUES
+(
+    @ClientId,
+    @AccountingClientName,
+    @IsActive,
+    GETDATE()
+);", conn);
+
+            cmd.Parameters.AddWithValue("@ClientId", clientId);
+            cmd.Parameters.AddWithValue("@AccountingClientName", accountingClientName);
+            cmd.Parameters.AddWithValue("@IsActive", isActive);
+
+            conn.Open();
+            cmd.ExecuteNonQuery();
+
+            TempData["Message"] = "Accounting mapping added.";
+            return RedirectToAction(nameof(Edit), new { id = clientId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteAccountingMap(int clientAccountingMapId, int clientId)
+        {
+            if (clientAccountingMapId <= 0 || clientId <= 0)
+            {
+                TempData["Error"] = "Invalid accounting mapping.";
+                return RedirectToAction(nameof(Edit), new { id = clientId });
+            }
+
+            using var conn = new SqlConnection(_connectionString);
+            using var cmd = new SqlCommand(@"
+DELETE FROM dbo.ClientAccountingMap
+WHERE ClientAccountingMapId = @ClientAccountingMapId;", conn);
+
+            cmd.Parameters.AddWithValue("@ClientAccountingMapId", clientAccountingMapId);
+
+            conn.Open();
+            cmd.ExecuteNonQuery();
+
+            TempData["Message"] = "Accounting mapping deleted.";
+            return RedirectToAction(nameof(Edit), new { id = clientId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateAccountingMap(int clientAccountingMapId, int clientId, string accountingClientName)
+        {
+            bool isActive = Request.Form["isActive"].Any(x => x == "true");
+
+            if (clientAccountingMapId <= 0 || clientId <= 0 || string.IsNullOrWhiteSpace(accountingClientName))
+            {
+                TempData["Error"] = "Invalid accounting mapping.";
+                return RedirectToAction(nameof(Edit), new { id = clientId });
+            }
+
+            if (isActive)
+            {
+                var conflict = FindConflictingClientMap(accountingClientName, excludeMapId: clientAccountingMapId);
+                if (conflict != null)
+                {
+                    TempData["Error"] = $"\"{accountingClientName}\" is already mapped to {conflict}. " +
+                        "Remove that mapping first if it should move to this client instead.";
+                    return RedirectToAction(nameof(Edit), new { id = clientId });
+                }
+            }
+
+            using var conn = new SqlConnection(_connectionString);
+            using var cmd = new SqlCommand(@"
+UPDATE dbo.ClientAccountingMap
+SET
+    AccountingClientName = @AccountingClientName,
+    IsActive = @IsActive
+WHERE ClientAccountingMapId = @ClientAccountingMapId;", conn);
+
+            cmd.Parameters.AddWithValue("@ClientAccountingMapId", clientAccountingMapId);
+            cmd.Parameters.AddWithValue("@AccountingClientName", accountingClientName);
+            cmd.Parameters.AddWithValue("@IsActive", isActive);
+
+            conn.Open();
+            cmd.ExecuteNonQuery();
+
+            TempData["Message"] = "Accounting mapping updated.";
+            return RedirectToAction(nameof(Edit), new { id = clientId });
         }
 
         private List<ClientPortfolioVm> GetPortfolios(int clientId)
