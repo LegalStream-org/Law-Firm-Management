@@ -6,6 +6,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.VisualBasic.FileIO;
 using System.Data;
 using System.IO;
+using System.Text.Json;
 using static Law_Firm_Management.Models.LawFirmEditVm;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -14,6 +15,10 @@ namespace Law_Firm_Management.Controllers
     public class LawFirmController : Controller
     {
         private readonly string _connectionString;
+
+        /// <summary>Sep 08 - TempData key the reassignment prompt travels under, named once so the
+        /// writing actions and the Edit GET that reads it can't drift.</summary>
+        private const string AccountingMapConflictKey = "AccountingMapConflict";
 
         private static readonly List<string> StateCodeOptions = new()
         {
@@ -338,6 +343,17 @@ VALUES
             var vm = GetLawFirmEditVm(id);
             if (vm == null)
                 return NotFound();
+
+            // Sep 08 - set by Add/UpdateAccountingMap when the chosen name is already mapped elsewhere.
+            // Read here rather than in GetLawFirmEditVm (shared with Details and the POST re-render) so
+            // the prompt only appears on the page that raised it; the LawFirmId guard blocks stale ones.
+            var pendingConflict = TempData[AccountingMapConflictKey] as string;
+            if (!string.IsNullOrWhiteSpace(pendingConflict))
+            {
+                var conflictVm = JsonSerializer.Deserialize<LawFirmAccountingMapConflictVm>(pendingConflict);
+                if (conflictVm != null && conflictVm.LawFirmId == id)
+                    vm.PendingAccountingMapConflict = conflictVm;
+            }
 
             return View(vm);
 
@@ -1005,16 +1021,54 @@ WHERE LawFirmId = @LawFirmId;", conn);
             // =========================
             // LOAD ACCOUNTING FIRMS
             // =========================
+            // Sep 08 - was every Firm name ever seen in the Accounting transaction tables; now that
+            // app's own canonical list, ported from FirmLookupService.GetActiveFirmNamesAsync with only
+            // the DB prefixes swapped (it runs on Accounting_Data reaching into BR_App, we're the
+            // reverse, same server). CommandTimeout carried over too.
+            //
+            // Ours, not the source's: lf.Status = 'Active' on the JOIN so an Inactive firm falls back to
+            // the raw COCO_NAME rather than vanishing (hence the CASE on lf.LawFirmId); the third branch
+            // re-admitting mapped aliases, so an existing row's stored value still matches an option
+            // (the Aug 21 bug on the Client side); and the NULL/blank guard the source applies in C#.
             vm.AccountingFirmOptions = new List<string>();
 
             using (var acctCmd = new SqlCommand(@"
-    select DISTINCT FirmName from (Select Firm FirmName 
-from Accounting_Data.dbo.FirmRemits
-union
-Select FIRM FirmName From Accounting_Data.dbo.FirmCost
-union
-Select FIRM FirmName From Accounting_Data.dbo.FirmInvoices) b order by FirmName
-;", conn))
+SELECT DISTINCT FirmName FROM (
+    SELECT
+        CASE
+            WHEN lf.LawFirmId IS NOT NULL
+                THEN lf.FirmName
+            ELSE af.COCO_NAME
+        END AS FirmName
+    FROM Accounting_Data.dbo.AccountingFirms af
+    LEFT JOIN dbo.LawFirmAccountingMap lam
+        ON lam.AccountingFirmName = af.COCO_NAME
+        AND lam.IsActive = 1
+    LEFT JOIN dbo.LawFirm lf
+        ON lf.LawFirmId = lam.LawFirmId
+        AND lf.Status = 'Active'
+
+    UNION
+
+    SELECT lf.FirmName
+    FROM dbo.LawFirm lf
+    WHERE lf.Status = 'Active'
+      AND NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.LawFirmAccountingMap lam
+        WHERE lam.LawFirmId = lf.LawFirmId
+          AND lam.IsActive = 1
+    )
+
+    UNION
+
+    SELECT lam2.AccountingFirmName AS FirmName
+    FROM dbo.LawFirmAccountingMap lam2
+    WHERE lam2.IsActive = 1
+) b
+WHERE FirmName IS NOT NULL AND LTRIM(RTRIM(FirmName)) <> ''
+ORDER BY FirmName;", conn) { CommandTimeout = 500 })
             {
                 using var acctRdr = acctCmd.ExecuteReader();
                 while (acctRdr.Read())
@@ -1030,12 +1084,30 @@ Select FIRM FirmName From Accounting_Data.dbo.FirmInvoices) b order by FirmName
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult AddAccountingMap(int lawFirmId, string accountingFirmName, bool isActive = true)
+        public IActionResult AddAccountingMap(int lawFirmId, string accountingFirmName, bool isActive = true, bool confirmReassign = false)
         {
             if (lawFirmId <= 0 || string.IsNullOrWhiteSpace(accountingFirmName))
             {
                 TempData["Error"] = "Please select an accounting firm.";
                 return RedirectToAction(nameof(Edit), new { id = lawFirmId });
+            }
+
+            if (isActive)
+            {
+                // Sep 08 - re-runs on the CONFIRMED post too: the confirmation went out to the browser
+                // and back, so the rows it described are a claim about the past. These are the real ones.
+                var conflicts = FindConflictingLawFirmMapRows(accountingFirmName);
+                if (conflicts.Count > 0)
+                {
+                    if (!confirmReassign)
+                    {
+                        return PromptAccountingMapReassign(
+                            nameof(AddAccountingMap), lawFirmId, 0, accountingFirmName, isActive, conflicts);
+                    }
+
+                    return ReassignAccountingMap(lawFirmId, accountingFirmName, isActive, 0, conflicts,
+                        successMessage: "Accounting mapping added.");
+                }
             }
 
             using var conn = new SqlConnection(_connectionString);
@@ -2306,7 +2378,7 @@ WHERE LawFirmAccountingMapId = @LawFirmAccountingMapId;", conn);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult UpdateAccountingMap(int lawFirmAccountingMapId, int lawFirmId, string accountingFirmName)
+        public IActionResult UpdateAccountingMap(int lawFirmAccountingMapId, int lawFirmId, string accountingFirmName, bool confirmReassign = false)
         {
             bool isActive = Request.Form["isActive"].Any(x => x == "true");
 
@@ -2314,6 +2386,22 @@ WHERE LawFirmAccountingMapId = @LawFirmAccountingMapId;", conn);
             {
                 TempData["Error"] = "Invalid accounting mapping.";
                 return RedirectToAction(nameof(Edit), new { id = lawFirmId });
+            }
+
+            if (isActive)
+            {
+                var conflicts = FindConflictingLawFirmMapRows(accountingFirmName, excludeMapId: lawFirmAccountingMapId);
+                if (conflicts.Count > 0)
+                {
+                    if (!confirmReassign)
+                    {
+                        return PromptAccountingMapReassign(
+                            nameof(UpdateAccountingMap), lawFirmId, lawFirmAccountingMapId, accountingFirmName, isActive, conflicts);
+                    }
+
+                    return ReassignAccountingMap(lawFirmId, accountingFirmName, isActive, lawFirmAccountingMapId, conflicts,
+                        successMessage: "Accounting mapping updated.");
+                }
             }
 
             using var conn = new SqlConnection(_connectionString);
@@ -2335,7 +2423,211 @@ WHERE LawFirmAccountingMapId = @LawFirmAccountingMapId;", conn);
             return RedirectToAction(nameof(Edit), new { id = lawFirmId });
         }
 
- 
+        /// <summary>
+        /// Sep 08 - whether accountingFirmName is already actively mapped to a DIFFERENT firm. New
+        /// here: this side had no conflict check at all, so such a mapping was invisible from any one
+        /// firm's Edit page. excludeMapId lets Update check every OTHER row, not itself.
+        ///
+        /// Every match, not TOP 1 - this table predates any duplicate guard, so two firms genuinely
+        /// can both claim a name, and clearing only the first would leave it ambiguous.
+        /// </summary>
+        private List<ConflictingAccountingMapRow> FindConflictingLawFirmMapRows(string accountingFirmName, int excludeMapId = 0)
+        {
+            var rows = new List<ConflictingAccountingMapRow>();
+
+            using var conn = new SqlConnection(_connectionString);
+            using var cmd = new SqlCommand(@"
+        SELECT
+            m.LawFirmAccountingMapId,
+            m.LawFirmId,
+            lf.FirmName,
+            lf.Status
+        FROM dbo.LawFirmAccountingMap m
+        JOIN dbo.LawFirm lf ON lf.LawFirmId = m.LawFirmId
+        WHERE m.AccountingFirmName = @AccountingFirmName
+          AND m.IsActive = 1
+          AND m.LawFirmAccountingMapId <> @ExcludeMapId
+        ORDER BY m.LawFirmAccountingMapId;", conn);
+
+            cmd.Parameters.AddWithValue("@AccountingFirmName", accountingFirmName);
+            cmd.Parameters.AddWithValue("@ExcludeMapId", excludeMapId);
+
+            conn.Open();
+
+            using var rdr = cmd.ExecuteReader();
+
+            while (rdr.Read())
+            {
+                rows.Add(new ConflictingAccountingMapRow
+                {
+                    LawFirmAccountingMapId = Convert.ToInt32(rdr["LawFirmAccountingMapId"]),
+                    LawFirmId = Convert.ToInt32(rdr["LawFirmId"]),
+                    FirmName = rdr["FirmName"]?.ToString(),
+                    Status = rdr["Status"]?.ToString()
+                });
+            }
+
+            return rows;
+        }
+
+        /// <summary>
+        /// Sep 08 - the one place a conflicting mapping's owner is named: warning, TempData messages,
+        /// audit text. Inactive firms are labelled, since "already associated with X" otherwise reads
+        /// as a live relationship; never filtered out though. Mirrors ClientController's version.
+        /// </summary>
+        private static string DescribeConflictOwners(List<ConflictingAccountingMapRow> rows)
+        {
+            return string.Join(", ", rows
+                .Select(r => string.Equals(r.Status, "Active", StringComparison.OrdinalIgnoreCase)
+                    ? r.FirmName
+                    : $"{r.FirmName} (Inactive)")
+                .Distinct());
+        }
+
+        /// <summary>Sep 08 - a LawFirmAccountingMap row on some OTHER firm already actively claiming
+        /// the name being mapped. Controller-private; nothing outside this flow needs it.</summary>
+        private sealed class ConflictingAccountingMapRow
+        {
+            public int LawFirmAccountingMapId { get; set; }
+            public int LawFirmId { get; set; }
+            public string? FirmName { get; set; }
+
+            /// <summary>The owning firm's status - labelled in the warning, never filtered on.</summary>
+            public string? Status { get; set; }
+        }
+
+        /// <summary>
+        /// Sep 08 - first half of the reassignment: stash the attempt and redirect to Edit, where the
+        /// modal re-offers it with confirmReassign set. Writes nothing, so cancelling leaves both
+        /// firms untouched - the reason this is a round trip and not a flag on the original write.
+        /// </summary>
+        private IActionResult PromptAccountingMapReassign(
+            string postAction,
+            int lawFirmId,
+            int lawFirmAccountingMapId,
+            string accountingFirmName,
+            bool isActive,
+            List<ConflictingAccountingMapRow> conflicts)
+        {
+            var pending = new LawFirmAccountingMapConflictVm
+            {
+                LawFirmId = lawFirmId,
+                LawFirmAccountingMapId = lawFirmAccountingMapId,
+                AccountingFirmName = accountingFirmName,
+                IsActive = isActive,
+                PostAction = postAction,
+                ExistingFirmName = DescribeConflictOwners(conflicts)
+            };
+
+            TempData[AccountingMapConflictKey] = JsonSerializer.Serialize(pending);
+            return RedirectToAction(nameof(Edit), new { id = lawFirmId });
+        }
+
+        /// <summary>
+        /// Sep 08 - the confirmed half: delete the old holder's row, then write this firm's, in ONE
+        /// transaction - old-first so the states never overlap, transactional so a failure between
+        /// them can't strand the mapping deleted-but-never-recreated. Hard DELETE rather than
+        /// IsActive = 0, matching the Client side. Audits run after the commit (own connection).
+        /// </summary>
+        private IActionResult ReassignAccountingMap(
+            int lawFirmId,
+            string accountingFirmName,
+            bool isActive,
+            int lawFirmAccountingMapId,
+            List<ConflictingAccountingMapRow> conflicts,
+            string successMessage)
+        {
+            using var conn = new SqlConnection(_connectionString);
+            conn.Open();
+
+            using var tx = conn.BeginTransaction();
+
+            try
+            {
+                foreach (var conflict in conflicts)
+                {
+                    using var deleteCmd = new SqlCommand(@"
+DELETE FROM dbo.LawFirmAccountingMap
+WHERE LawFirmAccountingMapId = @LawFirmAccountingMapId;", conn, tx);
+
+                    deleteCmd.Parameters.AddWithValue("@LawFirmAccountingMapId", conflict.LawFirmAccountingMapId);
+                    deleteCmd.ExecuteNonQuery();
+                }
+
+                // lawFirmAccountingMapId > 0 means the user was editing an existing row of this
+                // firm's own, so the mapping moves onto that row rather than adding a second one.
+                using var writeCmd = lawFirmAccountingMapId > 0
+                    ? new SqlCommand(@"
+UPDATE dbo.LawFirmAccountingMap
+SET
+    AccountingFirmName = @AccountingFirmName,
+    IsActive = @IsActive
+WHERE LawFirmAccountingMapId = @LawFirmAccountingMapId;", conn, tx)
+                    : new SqlCommand(@"
+INSERT INTO dbo.LawFirmAccountingMap
+(
+    LawFirmId,
+    AccountingFirmName,
+    IsActive,
+    CreatedDate
+)
+VALUES
+(
+    @LawFirmId,
+    @AccountingFirmName,
+    @IsActive,
+    GETDATE()
+);", conn, tx);
+
+                writeCmd.Parameters.AddWithValue("@AccountingFirmName", accountingFirmName);
+                writeCmd.Parameters.AddWithValue("@IsActive", isActive);
+
+                if (lawFirmAccountingMapId > 0)
+                    writeCmd.Parameters.AddWithValue("@LawFirmAccountingMapId", lawFirmAccountingMapId);
+                else
+                    writeCmd.Parameters.AddWithValue("@LawFirmId", lawFirmId);
+
+                writeCmd.ExecuteNonQuery();
+
+                tx.Commit();
+            }
+            catch (Exception ex)
+            {
+                tx.Rollback();
+
+                TempData["Error"] = $"Could not reassign \"{accountingFirmName}\": {ex.Message} " +
+                    "No mappings were changed.";
+                return RedirectToAction(nameof(Edit), new { id = lawFirmId });
+            }
+
+            var previousOwners = DescribeConflictOwners(conflicts);
+            var currentFirmName = GetFirmNameById(lawFirmId) ?? $"law firm {lawFirmId}";
+
+            foreach (var conflict in conflicts)
+            {
+                AddAudit(conflict.LawFirmId, "AccountingMap", conflict.LawFirmAccountingMapId, "Delete",
+                    $"Accounting mapping \"{accountingFirmName}\" reassigned to {currentFirmName}");
+            }
+
+            AddAudit(lawFirmId, "AccountingMap", lawFirmAccountingMapId > 0 ? (int?)lawFirmAccountingMapId : null, "Update",
+                $"Accounting mapping \"{accountingFirmName}\" reassigned from {previousOwners}");
+
+            TempData["Message"] = $"{successMessage} \"{accountingFirmName}\" was reassigned from {previousOwners}.";
+            return RedirectToAction(nameof(Edit), new { id = lawFirmId });
+        }
+
+        /// <summary>Sep 08 - the current firm's own name, for the audit text on both sides of a
+        /// reassignment.</summary>
+        private string? GetFirmNameById(int lawFirmId)
+        {
+            using var conn = new SqlConnection(_connectionString);
+            using var cmd = new SqlCommand("SELECT FirmName FROM dbo.LawFirm WHERE LawFirmId = @LawFirmId;", conn);
+            cmd.Parameters.AddWithValue("@LawFirmId", lawFirmId);
+            conn.Open();
+            return cmd.ExecuteScalar() as string;
+        }
+
+
 
     private LawFirmAccountingActivityVm GetAccountingActivity(int lawFirmId)
         {
