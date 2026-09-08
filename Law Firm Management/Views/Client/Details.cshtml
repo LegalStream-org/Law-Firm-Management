@@ -40,6 +40,7 @@
                             <tr><th style="width:200px;">Client Name</th><td>@Model.ClientName</td></tr>
                             <tr><th>Short Name</th><td>@Model.ShortName</td></tr>
                             <tr><th>Status</th><td>@Model.Status</td></tr>
+                            <tr><th>Client Type</th><td>@(Model.ClientTypeOptions?.FirstOrDefault(o => o.Value == Model.ClientTypeId.ToString())?.Text ?? "—")</td></tr>
                             <tr><th>Main Phone</th><td>@Model.MainPhone</td></tr>
                             <tr><th>Main Email</th><td>@Model.MainEmail</td></tr>
                             <tr><th>Website</th><td>@Model.Website</td></tr>

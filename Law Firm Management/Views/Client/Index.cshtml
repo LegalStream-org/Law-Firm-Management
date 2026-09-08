@@ -47,6 +47,15 @@
             <option value="Inactive" selected="@(status == "Inactive")">Inactive</option>
         </select>
     </div>
+    <div class="col-md-3">
+        <select name="clientType" class="form-select">
+            <option value="">All Client Types</option>
+            @foreach (var t in (ViewBag.ClientTypeOptions as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>) ?? new())
+            {
+                <option value="@t.Text" selected="@(t.Text == (ViewBag.ClientType as string))">@t.Text</option>
+            }
+        </select>
+    </div>
     <div class="col-md-2">
         <button type="submit" class="btn btn-secondary w-100">Search</button>
     </div>
@@ -78,6 +87,15 @@
             </th>
             <th>
                 <a asp-action="Index"
+                   asp-route-sort="CLIENT_TYPE"
+                   asp-route-dir="@ToggleDir("CLIENT_TYPE")"
+                   asp-route-search="@search"
+                   asp-route-status="@status">
+                    Client Type
+                </a>
+            </th>
+            <th>
+                <a asp-action="Index"
                    asp-route-sort="CONTACT_COUNT"
                    asp-route-dir="@ToggleDir("CONTACT_COUNT")"
                    asp-route-search="@search"
@@ -101,7 +119,7 @@
         @if (Model == null || !Model.Any())
         {
             <tr>
-                <td colspan="6" class="text-center">No clients found.</td>
+                <td colspan="7" class="text-center">No clients found.</td>
             </tr>
         }
         else
@@ -111,6 +129,7 @@
                 <tr>
                     <td>@r.ClientName</td>
                     <td>@r.Status</td>
+                    <td>@r.ClientTypeName</td>
                     <td>@r.ContactCount</td>
                     <td>@(r.UpdatedDate?.ToString("d") ?? "")</td>
                     <td>
