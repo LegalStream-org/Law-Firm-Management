@@ -6,6 +6,7 @@
         public string? ClientName { get; set; }
         public string? ShortName { get; set; }
         public string? Status { get; set; }
+        public string? ClientTypeName { get; set; }
         public int ContactCount { get; set; }
         public DateTime? UpdatedDate { get; set; }
     }

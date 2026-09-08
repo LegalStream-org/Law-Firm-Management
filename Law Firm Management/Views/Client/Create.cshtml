@@ -33,6 +33,11 @@
             </select>
         </div>
 
+        <div class="col-md-3">
+            <label asp-for="ClientTypeId" class="form-label">Client Type</label>
+            <select asp-for="ClientTypeId" asp-items="Model.ClientTypeOptions" class="form-select"></select>
+        </div>
+
         <div class="col-md-4">
             <label asp-for="MainPhone" class="form-label"></label>
             <input asp-for="MainPhone" class="form-control" />

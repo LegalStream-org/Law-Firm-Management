@@ -31,7 +31,7 @@ namespace Law_Firm_Management.Controllers
                 ?? throw new InvalidOperationException("Missing SQL Connection connection string.");
         }
 
-        public IActionResult Index(string search, string status, string sort = "CLIENT_NAME", string dir = "ASC")
+        public IActionResult Index(string search, string status, string clientType, string sort = "CLIENT_NAME", string dir = "ASC")
         {
             var rows = GetClients();
 
@@ -48,6 +48,13 @@ namespace Law_Firm_Management.Controllers
             {
                 rows = rows
                     .Where(x => string.Equals(x.Status, status, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            if (!string.IsNullOrWhiteSpace(clientType))
+            {
+                rows = rows
+                    .Where(x => string.Equals(x.ClientTypeName, clientType, StringComparison.OrdinalIgnoreCase))
                     .ToList();
             }
 
@@ -55,13 +62,15 @@ namespace Law_Firm_Management.Controllers
 
             ViewBag.Search = search ?? "";
             ViewBag.Status = status ?? "";
+            ViewBag.ClientType = clientType ?? "";
+            ViewBag.ClientTypeOptions = GetClientTypeSelectOptions();
             ViewBag.Sort = sort;
             ViewBag.Dir = dir;
 
             return View(rows);
         }
 
-        public IActionResult Export(string search, string status, string sort = "CLIENT_NAME", string dir = "ASC")
+        public IActionResult Export(string search, string status, string clientType, string sort = "CLIENT_NAME", string dir = "ASC")
         {
             var rows = GetClients();
 
@@ -78,6 +87,13 @@ namespace Law_Firm_Management.Controllers
             {
                 rows = rows
                     .Where(x => string.Equals(x.Status, status, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            if (!string.IsNullOrWhiteSpace(clientType))
+            {
+                rows = rows
+                    .Where(x => string.Equals(x.ClientTypeName, clientType, StringComparison.OrdinalIgnoreCase))
                     .ToList();
             }
 
@@ -89,8 +105,9 @@ namespace Law_Firm_Management.Controllers
             ws.Cell(1, 1).Value = "Client Name";
             ws.Cell(1, 2).Value = "Short Name";
             ws.Cell(1, 3).Value = "Status";
-            ws.Cell(1, 4).Value = "Contact Count";
-            ws.Cell(1, 5).Value = "Updated Date";
+            ws.Cell(1, 4).Value = "Client Type";
+            ws.Cell(1, 5).Value = "Contact Count";
+            ws.Cell(1, 6).Value = "Updated Date";
 
             int row = 2;
             foreach (var item in rows)
@@ -98,8 +115,9 @@ namespace Law_Firm_Management.Controllers
                 ws.Cell(row, 1).Value = item.ClientName;
                 ws.Cell(row, 2).Value = item.ShortName;
                 ws.Cell(row, 3).Value = item.Status;
-                ws.Cell(row, 4).Value = item.ContactCount;
-                ws.Cell(row, 5).Value = item.UpdatedDate;
+                ws.Cell(row, 4).Value = item.ClientTypeName;
+                ws.Cell(row, 5).Value = item.ContactCount;
+                ws.Cell(row, 6).Value = item.UpdatedDate;
                 row++;
             }
 
@@ -122,7 +140,8 @@ namespace Law_Firm_Management.Controllers
             return View(new ClientEditVm
             {
                 Status = "Active",
-                ContactTypeOptions = ContactTypeOptions
+                ContactTypeOptions = ContactTypeOptions,
+                ClientTypeOptions = GetClientTypeSelectOptions()
             });
         }
 
@@ -133,6 +152,7 @@ namespace Law_Firm_Management.Controllers
             if (!ModelState.IsValid)
             {
                 vm.ContactTypeOptions = ContactTypeOptions;
+                vm.ClientTypeOptions = GetClientTypeSelectOptions();
                 return View(vm);
             }
 
@@ -143,6 +163,7 @@ INSERT INTO dbo.Client
     ClientName,
     ShortName,
     Status,
+    ClientTypeId,
     MainPhone,
     MainEmail,
     Website,
@@ -162,6 +183,7 @@ VALUES
     @ClientName,
     @ShortName,
     @Status,
+    @ClientTypeId,
     @MainPhone,
     @MainEmail,
     @Website,
@@ -182,6 +204,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
             cmd.Parameters.AddWithValue("@ClientName", (object?)vm.ClientName ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ShortName", (object?)vm.ShortName ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Status", (object?)vm.Status ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ClientTypeId", (object?)vm.ClientTypeId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@MainPhone", (object?)vm.MainPhone ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@MainEmail", (object?)vm.MainEmail ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Website", (object?)vm.Website ?? DBNull.Value);
@@ -225,6 +248,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
             if (!ModelState.IsValid)
             {
                 vm.ContactTypeOptions = ContactTypeOptions;
+                vm.ClientTypeOptions = GetClientTypeSelectOptions();
                 vm.Contacts = GetContacts(vm.ClientId);
                 vm.Notes = GetNotes(vm.ClientId);
                 vm.AuditHistory = GetAuditHistory(vm.ClientId);
@@ -243,6 +267,7 @@ SET
     ClientName = @ClientName,
     ShortName = @ShortName,
     Status = @Status,
+    ClientTypeId = @ClientTypeId,
     MainPhone = @MainPhone,
     MainEmail = @MainEmail,
     Website = @Website,
@@ -260,6 +285,7 @@ WHERE ClientId = @ClientId;", conn);
             cmd.Parameters.AddWithValue("@ClientName", (object?)vm.ClientName ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ShortName", (object?)vm.ShortName ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Status", (object?)vm.Status ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ClientTypeId", (object?)vm.ClientTypeId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@MainPhone", (object?)vm.MainPhone ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@MainEmail", (object?)vm.MainEmail ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Website", (object?)vm.Website ?? DBNull.Value);
@@ -1082,15 +1108,18 @@ SELECT
     c.ClientName,
     c.ShortName,
     c.Status,
+    ct.TypeName AS ClientTypeName,
     ISNULL(c.UpdatedDate, c.CreatedDate) AS UpdatedDate,
     COUNT(DISTINCT cc.ClientContactId) AS ContactCount
 FROM dbo.Client c
 LEFT JOIN dbo.ClientContact cc ON c.ClientId = cc.ClientId
+LEFT JOIN dbo.ClientType ct ON ct.ClientTypeId = c.ClientTypeId
 GROUP BY
     c.ClientId,
     c.ClientName,
     c.ShortName,
     c.Status,
+    ct.TypeName,
     c.UpdatedDate,
     c.CreatedDate;", conn);
 
@@ -1104,12 +1133,29 @@ GROUP BY
                     ClientName = rdr["ClientName"]?.ToString(),
                     ShortName = rdr["ShortName"]?.ToString(),
                     Status = rdr["Status"]?.ToString(),
+                    ClientTypeName = rdr["ClientTypeName"]?.ToString(),
                     ContactCount = Convert.ToInt32(rdr["ContactCount"]),
                     UpdatedDate = rdr["UpdatedDate"] == DBNull.Value ? null : (DateTime?)Convert.ToDateTime(rdr["UpdatedDate"])
                 });
             }
 
             return rows;
+        }
+
+        // Powers the ClientType dropdown on Client Create/Edit. The list itself is owned and
+        // managed by SettingsController (Settings > Client Types) - this just reads it.
+        private List<SelectListItem> GetClientTypeSelectOptions()
+        {
+            var options = SettingsController.GetActiveClientTypeOptions(_connectionString)
+                .Select(t => new SelectListItem
+                {
+                    Value = t.ClientTypeId.ToString(),
+                    Text = t.TypeName
+                })
+                .ToList();
+
+            options.Insert(0, new SelectListItem { Value = "", Text = "-- Select Client Type --" });
+            return options;
         }
 
         private ClientEditVm? GetClientEditVm(int id)
@@ -1131,6 +1177,7 @@ GROUP BY
                         ClientName = rdr["ClientName"]?.ToString(),
                         ShortName = rdr["ShortName"]?.ToString(),
                         Status = rdr["Status"]?.ToString() ?? "Active",
+                        ClientTypeId = rdr["ClientTypeId"] == DBNull.Value ? null : Convert.ToInt32(rdr["ClientTypeId"]),
                         MainPhone = rdr["MainPhone"]?.ToString(),
                         MainEmail = rdr["MainEmail"]?.ToString(),
                         Website = rdr["Website"]?.ToString(),
@@ -1152,6 +1199,7 @@ GROUP BY
             vm.AuditHistory = GetAuditHistory(id);
             vm.Documents = GetDocuments(id);
             vm.ContactTypeOptions = ContactTypeOptions;
+            vm.ClientTypeOptions = GetClientTypeSelectOptions();
             vm.SftpConfigs = GetSftpConfigs(id);
             vm.Tasks = GetTasks(id);
             vm.AuthTypeOptions = AuthTypeOptions;
@@ -1212,6 +1260,7 @@ ORDER BY ClientName;", conn2);
             vm.AuditHistory = GetAuditHistory(id);
             vm.Documents = GetDocuments(id);
             vm.ContactTypeOptions = ContactTypeOptions;
+            vm.ClientTypeOptions = GetClientTypeSelectOptions();
             vm.SftpConfigs = GetSftpConfigs(id);
             vm.Tasks = GetTasks(id);
             vm.Portfolios = GetPortfolios(id);
@@ -2317,6 +2366,7 @@ VALUES
             {
                 "SHORT_NAME" => desc ? rows.OrderByDescending(x => x.ShortName).ToList() : rows.OrderBy(x => x.ShortName).ToList(),
                 "STATUS" => desc ? rows.OrderByDescending(x => x.Status).ToList() : rows.OrderBy(x => x.Status).ToList(),
+                "CLIENT_TYPE" => desc ? rows.OrderByDescending(x => x.ClientTypeName).ToList() : rows.OrderBy(x => x.ClientTypeName).ToList(),
                 "CONTACT_COUNT" => desc ? rows.OrderByDescending(x => x.ContactCount).ToList() : rows.OrderBy(x => x.ContactCount).ToList(),
                 "UPDATED_DATE" => desc ? rows.OrderByDescending(x => x.UpdatedDate).ToList() : rows.OrderBy(x => x.UpdatedDate).ToList(),
                 _ => desc ? rows.OrderByDescending(x => x.ClientName).ToList() : rows.OrderBy(x => x.ClientName).ToList()

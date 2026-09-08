@@ -1,0 +1,958 @@
+﻿@model Law_Firm_Management.Models.ClientEditVm
+
+@{
+    ViewData["Title"] = "Client Details";
+}
+
+<div class="container-fluid py-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0">@Model.ClientName</h2>
+            <div class="text-muted">Client Details</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary">Back</a>
+            <a asp-action="Edit" asp-route-id="@Model.ClientId" class="btn btn-primary">Edit</a>
+        </div>
+    </div>
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success">@TempData["Message"]</div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <div class="row g-3">
+        <div class="col-12 col-lg-8">
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Client Profile</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                            <tr><th style="width:200px;">Client Name</th><td>@Model.ClientName</td></tr>
+                            <tr><th>Short Name</th><td>@Model.ShortName</td></tr>
+                            <tr><th>Status</th><td>@Model.Status</td></tr>
+                            <tr><th>Client Type</th><td>@(Model.ClientTypeOptions?.FirstOrDefault(o => o.Value == Model.ClientTypeId.ToString())?.Text ?? "—")</td></tr>
+                            <tr><th>Main Phone</th><td>@Model.MainPhone</td></tr>
+                            <tr><th>Main Email</th><td>@Model.MainEmail</td></tr>
+                            <tr><th>Website</th><td>@Model.Website</td></tr>
+                            <tr><th>Address</th><td>@Model.Address1 @Model.Address2, @Model.City, @Model.State @Model.Zip</td></tr>
+                            <tr><th>Profile Notes</th><td>@Model.ProfileNotes</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Contacts</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>Title</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Preferred Method</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Contacts.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-muted">No contacts found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var c in Model.Contacts)
+                                    {
+                                        <tr>
+                                            <td>@c.ContactType</td>
+                                            <td>@c.ContactName</td>
+                                            <td>@c.Title</td>
+                                            <td>@c.Email</td>
+                                            <td>@c.Phone</td>
+                                            <td>@c.PreferredContactMethod</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Notes</h5>
+                </div>
+                <div class="card-body">
+
+                    <form asp-action="AddNote" method="post" class="mb-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ClientId" value="@Model.ClientId" />
+                        <input type="hidden" name="returnAction" value="Details" />
+
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <label class="form-label">Note Type</label>
+                                <select name="NoteType" class="form-select form-select-sm">
+                                    @foreach (var type in Model.NoteOptions)
+                                    {
+                                        <option value="@type">@type</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-9">
+                                <label class="form-label">Add Note</label>
+                                <textarea name="NoteText" class="form-control" rows="3" placeholder="Enter note"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="mt-2 text-end">
+                            <button type="submit" class="btn btn-outline-primary">Add Note</button>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width:160px;">Date</th>
+                                    <th style="width:140px;">Type</th>
+                                    <th style="width:160px;">Entered By</th>
+                                    <th>Note</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Notes.Any())
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-muted">No notes found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var n in Model.Notes)
+                                    {
+                                        <tr>
+                                            <td>@n.EnteredDate.ToString("MM/dd/yyyy HH:mm")</td>
+                                            <td>@n.NoteType</td>
+                                            <td>@n.EnteredBy</td>
+                                            <td>@n.NoteText</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Task List</h5>
+                    <div class="text-muted small">Exports, reports, remits, and operational work.</div>
+                </div>
+                <div class="card-body">
+
+                    <form asp-action="AddTask" method="post" class="row g-2 mb-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ClientId" value="@Model.ClientId" />
+                        <input type="hidden" name="returnAction" value="Details" />
+
+                        <div class="col-md-2">
+                            <label class="form-label">Type</label>
+                            <select name="TaskType" class="form-select">
+                                @foreach (var item in Model.TaskTypeOptions)
+                                {
+                                    <option value="@item">@item</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Task Name</label>
+                            <input name="TaskName" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Frequency</label>
+                            <select name="Frequency" class="form-select">
+                                <option value=""></option>
+                                @foreach (var item in Model.TaskFrequencyOptions)
+                                {
+                                    <option value="@item">@item</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Due Day</label>
+                            <input name="DueDay" class="form-control" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Assigned To</label>
+                            <input name="AssignedTo" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Status</label>
+                            <select name="Status" class="form-select">
+                                @foreach (var item in Model.TaskStatusOptions)
+                                {
+                                    <option value="@item">@item</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Delivery</label>
+                            <select name="DeliveryMethod" class="form-select">
+                                <option value=""></option>
+                                @foreach (var item in Model.DeliveryMethodOptions)
+                                {
+                                    <option value="@item">@item</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Next Due Date</label>
+                            <input name="NextDueDate" type="date" class="form-control" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Last Completed</label>
+                            <input name="LastCompletedDate" type="date" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">SFTP Config Id</label>
+                            <input name="ClientSftpConfigId" class="form-control" />
+                        </div>
+
+                        <div class="col-md-10">
+                            <label class="form-label">Notes</label>
+                            <input name="Notes" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-outline-primary w-100">Add Task</button>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>Frequency</th>
+                                    <th>Due</th>
+                                    <th>Assigned</th>
+                                    <th>Status</th>
+                                    <th>Delivery</th>
+                                    <th>SFTP</th>
+                                    <th>Next Due</th>
+                                    <th>Last Completed</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Tasks.Any())
+                                {
+                                    <tr>
+                                        <td colspan="11" class="text-muted">No tasks found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var t in Model.Tasks)
+                                    {
+                                        <tr>
+                                            <td>@t.TaskType</td>
+                                            <td>@t.TaskName</td>
+                                            <td>@t.Frequency</td>
+                                            <td>@t.DueDay</td>
+                                            <td>@t.AssignedTo</td>
+                                            <td>@t.Status</td>
+                                            <td>@t.DeliveryMethod</td>
+                                            <td>@t.SftpConfigName</td>
+                                            <td>@(t.NextDueDate?.ToString("MM/dd/yyyy") ?? "")</td>
+                                            <td>@(t.LastCompletedDate?.ToString("MM/dd/yyyy") ?? "")</td>
+                                            <td>
+                                                <form asp-action="DeleteTask" method="post" class="d-inline" onsubmit="return confirm('Delete this task?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="clientTaskId" value="@t.ClientTaskId" />
+                                                    <input type="hidden" name="clientId" value="@Model.ClientId" />
+                                                    <input type="hidden" name="returnAction" value="Details" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">SFTP Configurations</h5>
+                </div>
+                <div class="card-body">
+
+                    <form asp-action="AddSftpConfig" method="post" class="row g-2 mb-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ClientId" value="@Model.ClientId" />
+                        <input type="hidden" name="returnAction" value="Details" />
+
+                        <div class="col-md-2">
+                            <label class="form-label">Config Name</label>
+                            <input name="ConfigName" class="form-control" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Host</label>
+                            <input name="Host" class="form-control" />
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">Port</label>
+                            <input name="Port" class="form-control" value="22" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Username</label>
+                            <input name="Username" class="form-control" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Auth Type</label>
+                            <select name="AuthType" class="form-select">
+                                @foreach (var item in Model.AuthTypeOptions)
+                                {
+                                    <option value="@item">@item</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Password / Key</label>
+                            <input name="PasswordValue" class="form-control" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Inbound Path</label>
+                            <input name="RemoteInboundPath" class="form-control" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Outbound Path</label>
+                            <input name="RemoteOutboundPath" class="form-control" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Archive Path</label>
+                            <input name="ArchivePath" class="form-control" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Error Path</label>
+                            <input name="ErrorPath" class="form-control" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Active</label>
+                            <div>
+                                <input type="hidden" name="IsActive" value="false" />
+                                <input type="checkbox" name="IsActive" value="true" checked />
+                            </div>
+                        </div>
+
+                        <div class="col-md-10">
+                            <label class="form-label">Notes</label>
+                            <input name="Notes" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-outline-primary w-100">Add SFTP</button>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Host</th>
+                                    <th>Port</th>
+                                    <th>User</th>
+                                    <th>Auth</th>
+                                    <th>Inbound</th>
+                                    <th>Outbound</th>
+                                    <th>Active</th>
+                                    <th>Last Test</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.SftpConfigs.Any())
+                                {
+                                    <tr>
+                                        <td colspan="10" class="text-muted">No SFTP configurations found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var s in Model.SftpConfigs)
+                                    {
+                                        <tr>
+                                            <td>@s.ConfigName</td>
+                                            <td>@s.Host</td>
+                                            <td>@s.Port</td>
+                                            <td>@s.Username</td>
+                                            <td>@s.AuthType</td>
+                                            <td>@s.RemoteInboundPath</td>
+                                            <td>@s.RemoteOutboundPath</td>
+                                            <td>@(s.IsActive ? "Yes" : "No")</td>
+                                            <td>@(s.LastConnectionTestDate?.ToString("MM/dd/yyyy HH:mm") ?? "") @s.LastConnectionTestStatus</td>
+                                            <td>
+                                                <form asp-action="DeleteSftpConfig" method="post" class="d-inline" onsubmit="return confirm('Delete this SFTP configuration?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="clientSftpConfigId" value="@s.ClientSftpConfigId" />
+                                                    <input type="hidden" name="clientId" value="@Model.ClientId" />
+                                                    <input type="hidden" name="returnAction" value="Details" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Portfolio / CLS FORW_NO Mapping</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Portfolio Name</th>
+                                    <th>Portfolio Code</th>
+                                    <th>CLS FORW_NO</th>
+                                    <th>Active</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Portfolios == null || !Model.Portfolios.Any())
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-muted">No portfolio mappings found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var p in Model.Portfolios)
+                                    {
+                                        <tr>
+                                            <td>@p.PortfolioName</td>
+                                            <td>@p.PortfolioCode</td>
+                                            <td>@p.ForwNo</td>
+                                            <td>@(p.IsActive ? "Yes" : "No")</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            @* Aug 19 - Accounting Mapping, mirrors LawFirm Details' own version of this same feature
+               (list + Active toggle + Delete, no Add form, no editable name - those stay on the Edit
+               page). Deliberately following LawFirm Details' functional precedent for this specific
+               feature rather than the plainer, fully read-only Portfolio card just above - same
+               feature should behave the same way across entity types, even though an unrelated card
+               on this page happens to be simpler. Visual styling (card shadow-sm mb-3, table-sm
+               table-hover) matches this page's own convention, not LawFirm's. *@
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Accounting Mapping</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Accounting Client</th>
+                                    <th style="width:120px;">Active</th>
+                                    <th style="width:180px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.AccountingMaps == null || !Model.AccountingMaps.Any())
+                                {
+                                    <tr>
+                                        <td colspan="3" class="text-muted">No accounting mappings found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var m in Model.AccountingMaps)
+                                    {
+                                        var formId = $"detailsAcctMap_{m.ClientAccountingMapId}";
+
+                                        <tr>
+                                            <td>@m.AccountingClientName</td>
+
+                                            <td class="text-center">
+                                                @if (m.IsActive)
+                                                {
+                                                    <input type="checkbox" name="isActive" value="true" form="@formId" checked />
+                                                }
+                                                else
+                                                {
+                                                    <input type="checkbox" name="isActive" value="true" form="@formId" />
+                                                }
+
+                                                <input type="hidden" name="isActive" value="false" form="@formId" />
+                                                <input type="hidden" name="accountingClientName" value="@m.AccountingClientName" form="@formId" />
+                                            </td>
+
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <form id="@formId"
+                                                          asp-action="UpdateAccountingMap"
+                                                          asp-controller="Client"
+                                                          method="post"
+                                                          class="d-inline">
+                                                        @Html.AntiForgeryToken()
+
+                                                        <input type="hidden" name="clientAccountingMapId" value="@m.ClientAccountingMapId" />
+                                                        <input type="hidden" name="clientId" value="@Model.ClientId" />
+
+                                                        <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                                    </form>
+
+                                                    <form asp-action="DeleteAccountingMap"
+                                                          asp-controller="Client"
+                                                          method="post"
+                                                          class="d-inline"
+                                                          onsubmit="return confirm('Delete this accounting mapping?');">
+                                                        @Html.AntiForgeryToken()
+
+                                                        <input type="hidden" name="clientAccountingMapId" value="@m.ClientAccountingMapId" />
+                                                        <input type="hidden" name="clientId" value="@Model.ClientId" />
+
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card lf-card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Documents</h5>
+                    <div class="text-muted small">Contracts, NDAs, and other client documents.</div>
+                </div>
+                <div class="card-body">
+
+                    <form asp-action="AddDocument" method="post" enctype="multipart/form-data" class="row g-2 mb-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ClientId" value="@Model.ClientId" />
+                        <input type="hidden" name="returnAction" value="Details" />
+
+                        <div class="col-md-2">
+                            <label class="form-label">Type</label>
+                            <select name="DocumentType" class="form-select">
+                                <option value="">Select Type</option>
+                                @foreach (var t in Model.DocumentTypeOptions)
+                                {
+                                    <option value="@t">@t</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Document Name</label>
+                            <input name="DocumentName" class="form-control" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Choose File</label>
+                            <input name="UploadFile" type="file" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Effective</label>
+                            <input name="EffectiveDate" type="date" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Expiration</label>
+                            <input name="ExpirationDate" type="date" class="form-control" />
+                        </div>
+
+                        <div class="col-md-10">
+                            <label class="form-label">Notes</label>
+                            <input name="Notes" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Active</label>
+                            <div>
+                                <input type="hidden" name="IsActive" value="false" />
+                                <input type="checkbox" name="IsActive" value="true" checked />
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-outline-primary">Upload Document</button>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>File</th>
+                                    <th>Effective</th>
+                                    <th>Expiration</th>
+                                    <th>Active</th>
+                                    <th>Uploaded By</th>
+                                    <th>Uploaded</th>
+                                    <th style="width:320px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Documents.Any())
+                                {
+                                    <tr>
+                                        <td colspan="9" class="text-muted">No documents found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var d in Model.Documents)
+                                    {
+                                        var replaceFormId = $"replaceDocForm_{d.ClientDocumentId}";
+                                        <tr>
+                                            <td>@d.DocumentType</td>
+                                            <td>@d.DocumentName</td>
+                                            <td>@d.OriginalFileName</td>
+                                            <td>@(d.EffectiveDate?.ToString("MM/dd/yyyy") ?? "")</td>
+                                            <td>@(d.ExpirationDate?.ToString("MM/dd/yyyy") ?? "")</td>
+                                            <td>@(d.IsActive ? "Yes" : "No")</td>
+                                            <td>@d.UploadedBy</td>
+                                            <td>@d.UploadedDate.ToString("MM/dd/yyyy")</td>
+                                            <td>
+                                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                                    <a asp-action="DownloadDocument"
+                                                       asp-route-id="@d.ClientDocumentId"
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        Download
+                                                    </a>
+
+                                                    <form asp-action="DeleteDocument"
+                                                          method="post"
+                                                          class="d-inline"
+                                                          onsubmit="return confirm('Delete this document?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="clientDocumentId" value="@d.ClientDocumentId" />
+                                                        <input type="hidden" name="clientId" value="@Model.ClientId" />
+                                                        <input type="hidden" name="returnAction" value="Details" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                    </form>
+                                                </div>
+
+                                                <form id="@replaceFormId"
+                                                      asp-action="ReplaceDocument"
+                                                      method="post"
+                                                      enctype="multipart/form-data"
+                                                      class="row g-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="ClientDocumentId" value="@d.ClientDocumentId" />
+                                                    <input type="hidden" name="ClientId" value="@Model.ClientId" />
+                                                    <input type="hidden" name="returnAction" value="Details" />
+                                                    <input type="hidden" name="DocumentType" value="@d.DocumentType" />
+                                                    <input type="hidden" name="DocumentName" value="@d.DocumentName" />
+                                                    <input type="hidden" name="Notes" value="@d.Notes" />
+                                                    <input type="hidden" name="EffectiveDate" value="@(d.EffectiveDate?.ToString("yyyy-MM-dd"))" />
+                                                    <input type="hidden" name="ExpirationDate" value="@(d.ExpirationDate?.ToString("yyyy-MM-dd"))" />
+                                                    <input type="hidden" name="IsActive" value="@d.IsActive" />
+
+                                                    <div class="col-8">
+                                                        <input name="UploadFile" type="file" class="form-control form-control-sm" />
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Replace</button>
+                                                    </div>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+
+
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <span>Contacts</span>
+                        <strong>@Model.Contacts.Count</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>Notes</span>
+                        <strong>@Model.Notes.Count</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>Documents</span>
+                        <strong>@Model.Documents.Count</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Task Calendar</h5>
+                    <div class="text-muted small">Upcoming task due dates by client.</div>
+                </div>
+                <div class="card-body">
+                    <div id="taskCalendar"></div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Audit</h5>
+                </div>
+                <div class="card-body">
+                    @if (!Model.AuditHistory.Any())
+                    {
+                        <div class="text-muted">No audit history found.</div>
+                    }
+                    else
+                    {
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var a in Model.AuditHistory.Take(10))
+                                {
+                                    <tr>
+                                        <td>@a.EnteredDate.ToString("MM/dd/yyyy HH:mm")</td>
+                                        <td>@a.AuditText</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="taskEventModal" tabindex="-1" aria-labelledby="taskEventModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content shadow">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskEventModalLabel">Task Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small mb-1">Task Name</label>
+                        <div id="modalTaskName" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small mb-1">Type</label>
+                        <div id="modalTaskType"></div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Status</label>
+                        <div id="modalStatus"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Assigned To</label>
+                        <div id="modalAssignedTo"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Frequency</label>
+                        <div id="modalFrequency"></div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Due Day</label>
+                        <div id="modalDueDay"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Delivery</label>
+                        <div id="modalDelivery"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">SFTP Config</label>
+                        <div id="modalSftp"></div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small mb-1">Occurrence Date</label>
+                        <div id="modalOccurrenceDate"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small mb-1">Next Due Date</label>
+                        <div id="modalNextDueDate"></div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label text-muted small mb-1">Notes</label>
+                        <div id="modalNotes" class="border rounded p-2 bg-light-subtle" style="min-height:60px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" disabled>Edit Task</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const calendarEl = document.getElementById('taskCalendar');
+        if (!calendarEl) return;
+
+        const setText = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value && value.toString().trim() !== '' ? value : '-';
+        };
+
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            height: 750,
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,listMonth'
+            },
+            events: function (fetchInfo, successCallback, failureCallback) {
+              const url =
+    '@Url.Action("TaskCalendarEvents", "Client")' +
+    '?clientId=@Model.ClientId' +
+    '&start=' + encodeURIComponent(fetchInfo.startStr) +
+    '&end=' + encodeURIComponent(fetchInfo.endStr);
+
+                console.log('Calendar URL:', url);
+
+                fetch(url)
+                    .then(r => {
+                        console.log('Calendar status:', r.status);
+                        return r.json();
+                    })
+                    .then(data => {
+                        console.log('Calendar data:', data);
+                        successCallback(data);
+                    })
+                    .catch(err => {
+                        console.error('Calendar error:', err);
+                        failureCallback(err);
+                    });
+            },
+            eventClick: function (info) {
+                const p = info.event.extendedProps || {};
+
+                setText('modalTaskName', p.taskName || info.event.title);
+                setText('modalTaskType', p.taskType);
+                setText('modalAssignedTo', p.assignedTo);
+                setText('modalFrequency', p.frequency);
+                setText('modalDueDay', p.dueDay);
+                setText('modalDelivery', p.deliveryMethod);
+                setText('modalSftp', p.clientSftpConfigId);
+                setText('modalOccurrenceDate', info.event.startStr);
+                setText('modalNextDueDate', p.nextDueDate);
+                setText('modalNotes', p.notes);
+
+                const modalEl = document.getElementById('taskEventModal');
+
+                if (window.bootstrap && modalEl) {
+                    const taskEventModal = new bootstrap.Modal(modalEl);
+                    taskEventModal.show();
+                } else {
+                    alert(info.event.title);
+                }
+            }
+        });
+
+        calendar.render();
+    });
+</script>
+
+    <style>
+        #taskCalendar {
+            max-width: 100%;
+        }
+
+        .fc .fc-toolbar-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        .fc-event {
+            cursor: pointer;
+        }
+    </style>
+}
