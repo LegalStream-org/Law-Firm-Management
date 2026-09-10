@@ -1240,7 +1240,7 @@ GROUP BY
             {
                 conn2.Open();
                 using var acctCmd = new SqlCommand(@"
-SELECT DISTINCT ClientName FROM (
+SELECT MIN(ClientName) AS ClientName FROM (
     SELECT c.ClientName
     FROM dbo.ClientAccountingMap m
     JOIN dbo.Client c ON c.ClientId = m.ClientId
@@ -1272,7 +1272,8 @@ SELECT DISTINCT ClientName FROM (
     WHERE m3.IsActive = 1
 ) b
 WHERE ClientName IS NOT NULL AND LTRIM(RTRIM(ClientName)) <> ''
-ORDER BY ClientName;", conn2);
+GROUP BY UPPER(LTRIM(RTRIM(ClientName)))
+ORDER BY MIN(ClientName);", conn2);
 
                 using var acctRdr = acctCmd.ExecuteReader();
                 while (acctRdr.Read())
