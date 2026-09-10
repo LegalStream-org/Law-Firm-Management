@@ -404,6 +404,47 @@
     </tbody>
 </table>
 
+@* Sep 08 - reassignment confirmation, rendered only right after Add/UpdateAccountingMap bounced back
+   on a mapping another client holds. Continue replays the refused post from the stashed attempt (the
+   form above has been reset by the redirect); Cancel posts nothing, so nothing changes. *@
+@if (Model.PendingAccountingMapConflict != null)
+{
+    var pending = Model.PendingAccountingMapConflict;
+
+    <div class="modal fade" id="accountingMapConflictModal" tabindex="-1"
+         aria-labelledby="accountingMapConflictModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="accountingMapConflictModalLabel">Accounting Mapping Already Assigned</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">
+                        This accounting mapping is already associated with client
+                        <strong>@pending.ExistingClientName</strong>. If you continue, the existing
+                        mapping will be deleted from <strong>@pending.ExistingClientName</strong> and
+                        assigned to the current client. Do you want to continue?
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+
+                    <form asp-action="@pending.PostAction" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="clientId" value="@pending.ClientId" />
+                        <input type="hidden" name="clientAccountingMapId" value="@pending.ClientAccountingMapId" />
+                        <input type="hidden" name="accountingClientName" value="@pending.AccountingClientName" />
+                        <input type="hidden" name="isActive" value="@(pending.IsActive ? "true" : "false")" />
+                        <input type="hidden" name="confirmReassign" value="true" />
+                        <button type="submit" class="btn btn-primary">Continue</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 <hr />
 
 <h4 class="mb-3">Notes</h4>
@@ -515,4 +556,18 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    @if (Model.PendingAccountingMapConflict != null)
+    {
+        @* Sep 08 - the warning is the point of the redirect, so it opens itself. Bootstrap's bundle is
+           already loaded by _Layout above this section. *@
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                var conflictModal = document.getElementById("accountingMapConflictModal");
+                if (conflictModal) {
+                    new bootstrap.Modal(conflictModal).show();
+                }
+            });
+        </script>
+    }
 }

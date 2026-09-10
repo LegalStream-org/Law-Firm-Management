@@ -48,7 +48,8 @@ namespace Law_Firm_Management.Models
         /// Aug 19 - Client-side equivalent of LawFirm's Accounting Mapping card. See
         /// Create_ClientAccountingMap_Table.sql for the schema and the duplicate-mapping guard built
         /// in from the start (a real gap found in LawFirmAccountingMap's own screen while building
-        /// this - left alone there per direct instruction, not repeated here).
+        /// this - left alone there per direct instruction at the time, and since brought in line as
+        /// part of the Sep 08 reassignment work).
         /// </summary>
         public List<ClientAccountingMapVm> AccountingMaps { get; set; } = new();
 
@@ -56,6 +57,11 @@ namespace Law_Firm_Management.Models
         /// dropdown's options, same "every historical name, unfiltered" convention LawFirm's own
         /// AccountingFirmOptions already uses.</summary>
         public List<string> AccountingClientOptions { get; set; } = new();
+
+        /// <summary>Sep 08 - non-null only on the Edit GET right after Add/UpdateAccountingMap bounced
+        /// back on a mapping another client holds; that's when Edit.cshtml shows the reassignment
+        /// confirmation. Lives for one request only, hence TempData rather than a column.</summary>
+        public ClientAccountingMapConflictVm? PendingAccountingMapConflict { get; set; }
 
         public List<string> NoteOptions { get; set; } = new()
         {

@@ -39,6 +39,11 @@ namespace Law_Firm_Management.Models
         public List<LawFirmAccountingMapVm> AccountingMaps { get; set; } = new();
         public List<string> AccountingFirmOptions { get; set; } = new();
 
+        /// <summary>Sep 08 - non-null only on the Edit GET right after Add/UpdateAccountingMap bounced
+        /// back on a mapping another firm holds; that's when Edit.cshtml shows the reassignment
+        /// confirmation. Lives for one request only, hence TempData rather than a column.</summary>
+        public LawFirmAccountingMapConflictVm? PendingAccountingMapConflict { get; set; }
+
         public LawFirmAccountingActivityVm AccountingActivity { get; set; } = new();
 
 
