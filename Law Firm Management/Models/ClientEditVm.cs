@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Law_Firm_Management.Models
 {
@@ -15,6 +16,9 @@ namespace Law_Firm_Management.Models
 
         [Required]
         public string Status { get; set; } = "Active";
+
+        public int? ClientTypeId { get; set; }
+        public List<SelectListItem> ClientTypeOptions { get; set; } = new();
 
         public string? MainPhone { get; set; }
         public string? MainEmail { get; set; }

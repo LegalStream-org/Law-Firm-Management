@@ -396,7 +396,7 @@
                 <span class="nav-text">Dashboard</span>
             </a>
 
-            
+
 
             <div class="nav-section-title">Management</div>
 
@@ -519,6 +519,15 @@
                     </a>
                 </div>
             </div>
+
+            <div class="nav-section-title">Settings</div>
+
+            <a class="side-link @(currentController == "Settings" && currentAction == "ClientTypes" ? "active" : "")"
+               asp-controller="Settings"
+               asp-action="ClientTypes">
+                <span class="nav-icon">🏷️</span>
+                <span class="nav-text">Client Types</span>
+            </a>
         </nav>
 
         <div class="sidebar-footer">

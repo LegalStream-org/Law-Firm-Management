@@ -1,0 +1,63 @@
+@model List<Law_Firm_Management.Models.ClientTypeListRowVm>
+
+@{
+    ViewData["Title"] = "Client Types";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-3">
+    <h2>Client Types</h2>
+    <a class="btn btn-primary" asp-action="CreateClientType">Add New Client Type</a>
+</div>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}
+
+<table class="table table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>Type Name</th>
+            <th>Description</th>
+            <th>Auto-deselect Commissions</th>
+            <th>Status</th>
+            <th>Clients Using</th>
+            <th>Last Updated</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model == null || !Model.Any())
+        {
+            <tr>
+                <td colspan="7" class="text-center">No client types found.</td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var r in Model)
+            {
+                <tr>
+                    <td>@r.TypeName</td>
+                    <td>@r.Description</td>
+                    <td>@(r.SuppressCommissionByDefault ? "Yes" : "No")</td>
+                    <td>
+                        @if (r.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td>@r.ClientCount</td>
+                    <td>@(r.UpdatedDate?.ToString("d") ?? "")</td>
+                    <td>
+                        <a asp-action="EditClientType" asp-route-id="@r.ClientTypeId">Edit</a>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
