@@ -1258,6 +1258,15 @@ SELECT DISTINCT ClientName FROM (
 
     UNION
 
+    SELECT frc.ClientName
+    FROM Accounting_Data.dbo.FirmRemitClients frc
+    WHERE NOT EXISTS (
+        SELECT 1 FROM dbo.ClientAccountingMap m4
+        WHERE m4.AccountingClientName = frc.ClientName AND m4.IsActive = 1
+    )
+
+    UNION
+
     SELECT m3.AccountingClientName AS ClientName
     FROM dbo.ClientAccountingMap m3
     WHERE m3.IsActive = 1
