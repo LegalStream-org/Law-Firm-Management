@@ -45,6 +45,7 @@
                             <tr><th>Main Email</th><td>@Model.MainEmail</td></tr>
                             <tr><th>Website</th><td>@Model.Website</td></tr>
                             <tr><th>Address</th><td>@Model.Address1 @Model.Address2, @Model.City, @Model.State @Model.Zip</td></tr>
+                            <tr><th>Payment Terms</th><td>@Law_Firm_Management.Models.PaymentTermsText.Format(Model.Terms)</td></tr>
                             <tr><th>Profile Notes</th><td>@Model.ProfileNotes</td></tr>
                         </tbody>
                     </table>
@@ -65,7 +66,7 @@
                                     <th>Export ID</th>
                                     <th>Placement %</th>
                                     <th>Portfolio</th>
-                                    <th>SFTP Folder</th>                                   
+                                    <th>SFTP Folder</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -85,7 +86,7 @@
                                             <td>@s.ExportId</td>
                                             <td>@(s.PlacementPercent?.ToString("0.##") ?? "")</td>
                                             <td>@s.Portfolio</td>
-                                            <td>@s.SftpFolderPath</td>                                            
+                                            <td>@s.SftpFolderPath</td>
                                         </tr>
                                     }
                                 }
@@ -157,7 +158,7 @@
                                     @foreach (var Type in Model.NoteOptions)
                                     {
                                         <option value=@Type>@Type</option>
-                                    }                                 
+                                    }
                                 </select>
                                 @* <input name="NoteType" class="form-control" placeholder="General / IT / Billing / Ops" /> *@
                             </div>
@@ -382,7 +383,7 @@
                 </div>
             </div>
 
-           
+
 
             <div class="card lf-card mb-3">
                 <div class="card-header">
@@ -522,7 +523,7 @@
                 </div>
             </div>
 
-          
+
         </div>
     </div>
 </div>

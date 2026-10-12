@@ -230,6 +230,7 @@ INSERT INTO dbo.LawFirm
     [State],
     Zip,
     Notes,
+    Terms,
     CreatedBy,
     CreatedDate,
     UpdatedBy,
@@ -249,6 +250,7 @@ VALUES
     @State,
     @Zip,
     @ProfileNotes,
+    @Terms,
     @CreatedBy,
     GETDATE(),
     @UpdatedBy,
@@ -269,6 +271,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
             cmd.Parameters.AddWithValue("@State", (object?)vm.State ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Zip", (object?)vm.Zip ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ProfileNotes", (object?)vm.ProfileNotes ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Terms", (object?)vm.Terms ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@CreatedBy", User?.Identity?.Name ?? "System");
             cmd.Parameters.AddWithValue("@UpdatedBy", User?.Identity?.Name ?? "System");
 
@@ -276,6 +279,11 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
             int newId = (int)cmd.ExecuteScalar();
 
             AddAudit(newId, "LawFirm", newId, "Insert", $"Created law firm {vm.FirmName}");
+
+            if (!PaymentTermsText.AreSame(null, vm.Terms))
+            {
+                AddAudit(newId, "LawFirm", newId, "Update", $"Payment terms set to {PaymentTermsText.Format(vm.Terms)}");
+            }
 
             TempData["Message"] = "Law firm created.";
             return RedirectToAction(nameof(Edit), new { id = newId });
@@ -376,6 +384,9 @@ VALUES
                 return View(vm);
             }
 
+            // Read before the UPDATE so the audit line compares the old and new value.
+            var oldTerms = GetLawFirmTerms(vm.LawFirmId);
+
             using var conn = new SqlConnection(_connectionString);
             using var cmd = new SqlCommand(@"
 UPDATE dbo.LawFirm
@@ -392,6 +403,7 @@ SET
     [State] = @State,
     Zip = @Zip,
     Notes = @ProfileNotes,
+    Terms = @Terms,
     UpdatedBy = @UpdatedBy,
     UpdatedDate = GETDATE()
 WHERE LawFirmId = @LawFirmId;", conn);
@@ -409,6 +421,7 @@ WHERE LawFirmId = @LawFirmId;", conn);
             cmd.Parameters.AddWithValue("@State", (object?)vm.State ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Zip", (object?)vm.Zip ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ProfileNotes", (object?)vm.ProfileNotes ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Terms", (object?)vm.Terms ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@UpdatedBy", User?.Identity?.Name ?? "System");
 
             conn.Open();
@@ -417,6 +430,12 @@ WHERE LawFirmId = @LawFirmId;", conn);
 
 
             AddAudit(vm.LawFirmId, "LawFirm", vm.LawFirmId, "Update", $"Updated law firm {vm.FirmName}");
+
+            if (!PaymentTermsText.AreSame(oldTerms, vm.Terms))
+            {
+                AddAudit(vm.LawFirmId, "LawFirm", vm.LawFirmId, "Update",
+                    $"Payment terms changed from {PaymentTermsText.Format(oldTerms)} to {PaymentTermsText.Format(vm.Terms)}");
+            }
 
             TempData["Message"] = "Law firm updated.";
             return RedirectToAction(nameof(Edit), new { id = vm.LawFirmId });
@@ -883,7 +902,7 @@ WHERE LawFirmNoteId = @LawFirmNoteId;", conn);
             using var cmd = new SqlCommand(@"
 WITH InvoiceLast AS
 (
-    SELECT 
+    SELECT
         b.LawFirmId,
         MAX(a.TranDate) AS LastInvoice
     FROM Accounting_Data.dbo.FirmInvoices a
@@ -894,7 +913,7 @@ WITH InvoiceLast AS
 ),
 RemitLast AS
 (
-    SELECT 
+    SELECT
         b.LawFirmId,
         MAX(a.TranDate) AS LastRemit
     FROM Accounting_Data.dbo.FirmRemits a
@@ -905,7 +924,7 @@ RemitLast AS
 ),
 CostLast AS
 (
-    SELECT 
+    SELECT
         b.LawFirmId,
         MAX(a.TranDate) AS LastCostFile
     FROM Accounting_Data.dbo.FirmCost a
@@ -969,6 +988,18 @@ ORDER BY lf.FirmName;", conn);
             return rows;
         }
 
+        // Current stored payment terms for a firm (NULL when none are set).
+        private short? GetLawFirmTerms(int lawFirmId)
+        {
+            using var conn = new SqlConnection(_connectionString);
+            using var cmd = new SqlCommand("SELECT Terms FROM dbo.LawFirm WHERE LawFirmId = @LawFirmId;", conn);
+            cmd.Parameters.AddWithValue("@LawFirmId", lawFirmId);
+
+            conn.Open();
+            var result = cmd.ExecuteScalar();
+            return result == null || result == DBNull.Value ? null : Convert.ToInt16(result);
+        }
+
         private LawFirmEditVm? GetLawFirmEditVm(int id)
         {
             LawFirmEditVm? vm = null;
@@ -1000,7 +1031,8 @@ WHERE LawFirmId = @LawFirmId;", conn);
                         City = rdr["City"]?.ToString(),
                         State = rdr["State"]?.ToString(),
                         Zip = rdr["Zip"]?.ToString(),
-                        ProfileNotes = rdr["Notes"]?.ToString()
+                        ProfileNotes = rdr["Notes"]?.ToString(),
+                        Terms = rdr["Terms"] == DBNull.Value ? null : Convert.ToInt16(rdr["Terms"])
                     };
                 }
             }

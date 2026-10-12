@@ -28,6 +28,10 @@ namespace Law_Firm_Management.Models
 
         public string? ProfileNotes { get; set; }
 
+        /// <summary>Payment terms in days. Blank or 0 means Due on Receipt.</summary>
+        [Range(0, 365, ErrorMessage = "Payment terms must be between 0 and 365 days.")]
+        public short? Terms { get; set; }
+
         public List<LawFirmStateMapVm> StateMappings { get; set; } = new();
         public List<LawFirmContactVm> Contacts { get; set; } = new();
         public List<LawFirmNoteVm> Notes { get; set; } = new();

@@ -62,7 +62,13 @@
             <label class="form-label">Profile Notes</label>
             <input asp-for="ProfileNotes" class="form-control" />
         </div>
-      
+        <div class="col-md-4">
+            <label asp-for="Terms" class="form-label">Payment Terms (days)</label>
+            <input asp-for="Terms" type="number" min="0" max="365" step="1" class="form-control" />
+            <div class="form-text">Leave blank for Due on Receipt.</div>
+            <span asp-validation-for="Terms" class="text-danger"></span>
+        </div>
+
     </div>
 
     <div class="mt-3">

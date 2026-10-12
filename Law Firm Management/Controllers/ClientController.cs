@@ -178,6 +178,7 @@ INSERT INTO dbo.Client
     [State],
     Zip,
     ProfileNotes,
+    Terms,
     CreatedBy,
     CreatedDate,
     UpdatedBy,
@@ -198,6 +199,7 @@ VALUES
     @State,
     @Zip,
     @ProfileNotes,
+    @Terms,
     @CreatedBy,
     GETDATE(),
     @UpdatedBy,
@@ -219,6 +221,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
             cmd.Parameters.AddWithValue("@State", (object?)vm.State ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Zip", (object?)vm.Zip ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ProfileNotes", (object?)vm.ProfileNotes ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Terms", (object?)vm.Terms ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@CreatedBy", User?.Identity?.Name ?? "System");
             cmd.Parameters.AddWithValue("@UpdatedBy", User?.Identity?.Name ?? "System");
 
@@ -226,6 +229,11 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
             int newId = (int)cmd.ExecuteScalar();
 
             AddAudit(newId, "Client", newId, "Insert", $"Created client {vm.ClientName}");
+
+            if (!PaymentTermsText.AreSame(null, vm.Terms))
+            {
+                AddAudit(newId, "Client", newId, "Update", $"Payment terms set to {PaymentTermsText.Format(vm.Terms)}");
+            }
 
             // #1/#2 (Aug 21) - auto-create the canonical self-map row so this client's own name is
             // always resolvable through ClientAccountingMap from day one, not just via Client.ClientName
@@ -275,6 +283,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
             // #3 (Aug 21) - fetched before the UPDATE below runs, so this is a real before/after
             // comparison, not just the posted value on its own.
             var oldClientName = GetClientNameById(vm.ClientId);
+            var oldTerms = GetClientTerms(vm.ClientId);
 
             using var conn = new SqlConnection(_connectionString);
             using var cmd = new SqlCommand(@"
@@ -293,6 +302,7 @@ SET
     [State] = @State,
     Zip = @Zip,
     ProfileNotes = @ProfileNotes,
+    Terms = @Terms,
     UpdatedBy = @UpdatedBy,
     UpdatedDate = GETDATE()
 WHERE ClientId = @ClientId;", conn);
@@ -311,12 +321,19 @@ WHERE ClientId = @ClientId;", conn);
             cmd.Parameters.AddWithValue("@State", (object?)vm.State ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Zip", (object?)vm.Zip ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ProfileNotes", (object?)vm.ProfileNotes ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Terms", (object?)vm.Terms ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@UpdatedBy", User?.Identity?.Name ?? "System");
 
             conn.Open();
             cmd.ExecuteNonQuery();
 
             AddAudit(vm.ClientId, "Client", vm.ClientId, "Update", $"Updated client {vm.ClientName}");
+
+            if (!PaymentTermsText.AreSame(oldTerms, vm.Terms))
+            {
+                AddAudit(vm.ClientId, "Client", vm.ClientId, "Update",
+                    $"Payment terms changed from {PaymentTermsText.Format(oldTerms)} to {PaymentTermsText.Format(vm.Terms)}");
+            }
 
             // #3 (Aug 21) - only auto-maps the new name when ClientName actually changed - not on
             // every Edit save regardless. Old name's row is left alone; see
@@ -1174,6 +1191,18 @@ GROUP BY
             return options;
         }
 
+        // Current stored payment terms for a client (NULL when none are set).
+        private short? GetClientTerms(int clientId)
+        {
+            using var conn = new SqlConnection(_connectionString);
+            using var cmd = new SqlCommand("SELECT Terms FROM dbo.Client WHERE ClientId = @ClientId;", conn);
+            cmd.Parameters.AddWithValue("@ClientId", clientId);
+
+            conn.Open();
+            var result = cmd.ExecuteScalar();
+            return result == null || result == DBNull.Value ? null : Convert.ToInt16(result);
+        }
+
         private ClientEditVm? GetClientEditVm(int id)
         {
             ClientEditVm? vm = null;
@@ -1202,7 +1231,8 @@ GROUP BY
                         City = rdr["City"]?.ToString(),
                         State = rdr["State"]?.ToString(),
                         Zip = rdr["Zip"]?.ToString(),
-                        ProfileNotes = rdr["ProfileNotes"]?.ToString()
+                        ProfileNotes = rdr["ProfileNotes"]?.ToString(),
+                        Terms = rdr["Terms"] == DBNull.Value ? null : Convert.ToInt16(rdr["Terms"])
                     };
                 }
             }
