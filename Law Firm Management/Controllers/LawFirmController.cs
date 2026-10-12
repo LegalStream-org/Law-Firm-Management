@@ -269,6 +269,7 @@ INSERT INTO dbo.LawFirm
     Zip,
     EIN,
     Notes,
+    Terms,
     EntityType,
     CreatedBy,
     CreatedDate,
@@ -290,6 +291,7 @@ VALUES
     @Zip,
     @EIN,
     @ProfileNotes,
+    @Terms,
     @RecordType,
     @CreatedBy,
     GETDATE(),
@@ -314,12 +316,18 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
             cmd.Parameters.AddWithValue("@Zip", (object?)vm.Zip ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@EIN", (object?)NormalizeEin(vm.EIN) ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ProfileNotes", (object?)vm.ProfileNotes ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Terms", (object?)vm.Terms ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@CreatedBy", User?.Identity?.Name ?? "System");
             cmd.Parameters.AddWithValue("@UpdatedBy", User?.Identity?.Name ?? "System");
 
             int newId = (int)cmd.ExecuteScalar();
 
             AddAudit(newId, "LawFirm", newId, "Insert", $"Created {Labels.Full.ToLower()} {vm.FirmName}");
+
+            if (!PaymentTermsText.AreSame(null, vm.Terms))
+            {
+                AddAudit(newId, "LawFirm", newId, "Update", $"Payment terms set to {PaymentTermsText.Format(vm.Terms)}");
+            }
 
             TempData["Message"] = $"{Labels.Full} created.";
             return RedirectToAction(nameof(Edit), new { id = newId });
@@ -424,6 +432,9 @@ VALUES
                 return View(vm);
             }
 
+            // Read before the UPDATE so the audit line compares the old and new value.
+            var oldTerms = GetLawFirmTerms(vm.LawFirmId);
+
             using var conn = new SqlConnection(_connectionString);
             conn.Open();
 
@@ -455,6 +466,7 @@ SET
     Zip = @Zip,
     EIN = @EIN,
     Notes = @ProfileNotes,
+    Terms = @Terms,
     UpdatedBy = @UpdatedBy,
     UpdatedDate = GETDATE()
 WHERE LawFirmId = @LawFirmId;", conn);
@@ -473,6 +485,7 @@ WHERE LawFirmId = @LawFirmId;", conn);
             cmd.Parameters.AddWithValue("@Zip", (object?)vm.Zip ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@EIN", (object?)NormalizeEin(vm.EIN) ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ProfileNotes", (object?)vm.ProfileNotes ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Terms", (object?)vm.Terms ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@UpdatedBy", User?.Identity?.Name ?? "System");
 
             cmd.ExecuteNonQuery();
@@ -480,6 +493,12 @@ WHERE LawFirmId = @LawFirmId;", conn);
 
 
             AddAudit(vm.LawFirmId, "LawFirm", vm.LawFirmId, "Update", $"Updated {Labels.Full.ToLower()} {vm.FirmName}");
+
+            if (!PaymentTermsText.AreSame(oldTerms, vm.Terms))
+            {
+                AddAudit(vm.LawFirmId, "LawFirm", vm.LawFirmId, "Update",
+                    $"Payment terms changed from {PaymentTermsText.Format(oldTerms)} to {PaymentTermsText.Format(vm.Terms)}");
+            }
 
             TempData["Message"] = $"{Labels.Full} updated.";
             return RedirectToAction(nameof(Edit), new { id = vm.LawFirmId });
@@ -688,6 +707,18 @@ ORDER BY lf.FirmName;", conn);
             return rows;
         }
 
+        // Current stored payment terms for a firm (NULL when none are set).
+        private short? GetLawFirmTerms(int lawFirmId)
+        {
+            using var conn = new SqlConnection(_connectionString);
+            using var cmd = new SqlCommand("SELECT Terms FROM dbo.LawFirm WHERE LawFirmId = @LawFirmId;", conn);
+            cmd.Parameters.AddWithValue("@LawFirmId", lawFirmId);
+
+            conn.Open();
+            var result = cmd.ExecuteScalar();
+            return result == null || result == DBNull.Value ? null : Convert.ToInt16(result);
+        }
+
         private LawFirmEditVm? GetLawFirmEditVm(int id)
         {
             LawFirmEditVm? vm = null;
@@ -720,7 +751,8 @@ WHERE LawFirmId = @LawFirmId;", conn);
                         State = rdr["State"]?.ToString(),
                         Zip = rdr["Zip"]?.ToString(),
                         EIN = rdr["EIN"]?.ToString(),
-                        ProfileNotes = rdr["Notes"]?.ToString()
+                        ProfileNotes = rdr["Notes"]?.ToString(),
+                        Terms = rdr["Terms"] == DBNull.Value ? null : Convert.ToInt16(rdr["Terms"])
                     };
                 }
             }

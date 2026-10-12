@@ -18,6 +18,7 @@
                 <tr><th>Website</th><td>@Model.Website</td></tr>
                 <tr><th>EIN</th><td>@Model.EIN</td></tr>
                 <tr><th>Address</th><td>@Model.Address1 @Model.Address2, @Model.City, @Model.State @Model.Zip</td></tr>
+                <tr><th>Payment Terms</th><td>@Law_Firm_Management.Models.PaymentTermsText.Format(Model.Terms)</td></tr>
                 <tr><th>Profile Notes</th><td>@Model.ProfileNotes</td></tr>
             </tbody>
         </table>
