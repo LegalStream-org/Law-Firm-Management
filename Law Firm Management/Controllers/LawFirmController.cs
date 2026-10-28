@@ -229,6 +229,7 @@ INSERT INTO dbo.LawFirm
     City,
     [State],
     Zip,
+    EIN,
     Notes,
     CreatedBy,
     CreatedDate,
@@ -248,6 +249,7 @@ VALUES
     @City,
     @State,
     @Zip,
+    @EIN,
     @ProfileNotes,
     @CreatedBy,
     GETDATE(),
@@ -268,6 +270,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
             cmd.Parameters.AddWithValue("@City", (object?)vm.City ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@State", (object?)vm.State ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Zip", (object?)vm.Zip ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@EIN", (object?)NormalizeEin(vm.EIN) ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ProfileNotes", (object?)vm.ProfileNotes ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@CreatedBy", User?.Identity?.Name ?? "System");
             cmd.Parameters.AddWithValue("@UpdatedBy", User?.Identity?.Name ?? "System");
@@ -391,6 +394,7 @@ SET
     City = @City,
     [State] = @State,
     Zip = @Zip,
+    EIN = @EIN,
     Notes = @ProfileNotes,
     UpdatedBy = @UpdatedBy,
     UpdatedDate = GETDATE()
@@ -408,6 +412,7 @@ WHERE LawFirmId = @LawFirmId;", conn);
             cmd.Parameters.AddWithValue("@City", (object?)vm.City ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@State", (object?)vm.State ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Zip", (object?)vm.Zip ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@EIN", (object?)NormalizeEin(vm.EIN) ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ProfileNotes", (object?)vm.ProfileNotes ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@UpdatedBy", User?.Identity?.Name ?? "System");
 
@@ -1000,6 +1005,7 @@ WHERE LawFirmId = @LawFirmId;", conn);
                         City = rdr["City"]?.ToString(),
                         State = rdr["State"]?.ToString(),
                         Zip = rdr["Zip"]?.ToString(),
+                        EIN = rdr["EIN"]?.ToString(),
                         ProfileNotes = rdr["Notes"]?.ToString()
                     };
                 }
@@ -1311,6 +1317,12 @@ VALUES
             conn.Open();
             cmd.ExecuteNonQuery();
         }
+
+        /// <summary>EINs get pasted with stray spaces as often as typed clean - trim before the
+        /// write, and save blank as NULL rather than "" so an empty EIN has one clear state.
+        /// Mirrors ClientController's version.</summary>
+        private static string? NormalizeEin(string? ein) =>
+            string.IsNullOrWhiteSpace(ein) ? null : ein.Trim();
 
         private static List<LawFirmListRowVm> SortRows(List<LawFirmListRowVm> rows, string sort, string dir)
         {

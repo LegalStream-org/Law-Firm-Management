@@ -26,6 +26,9 @@ namespace Law_Firm_Management.Models
         public string State { get; set; }
         public string Zip { get; set; }
 
+        [StringLength(20)]
+        public string? EIN { get; set; }
+
         public string? ProfileNotes { get; set; }
 
         public List<LawFirmStateMapVm> StateMappings { get; set; } = new();
