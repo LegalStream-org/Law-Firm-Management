@@ -80,7 +80,8 @@
 
         <div class="col-md-4">
             <label asp-for="EIN" class="form-label">EIN</label>
-            <input asp-for="EIN" class="form-control" placeholder="12-3456789" />
+            <input asp-for="EIN" class="form-control" placeholder="12-3456789 or 123-45-6789" />
+            <span asp-validation-for="EIN" class="text-danger"></span>
         </div>
 
         <div class="col-12">

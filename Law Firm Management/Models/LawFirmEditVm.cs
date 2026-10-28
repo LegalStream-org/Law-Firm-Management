@@ -27,6 +27,8 @@ namespace Law_Firm_Management.Models
         public string Zip { get; set; }
 
         [StringLength(20)]
+        [RegularExpression(@"^\s*(?:[0-9]{2}-[0-9]{7}|[0-9]{3}-[0-9]{2}-[0-9]{4})\s*$|^$",
+            ErrorMessage = "Enter a valid EIN (XX-XXXXXXX) or SSN (XXX-XX-XXXX).")]
         public string? EIN { get; set; }
 
         public string? ProfileNotes { get; set; }

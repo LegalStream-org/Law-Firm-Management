@@ -162,6 +162,16 @@ namespace Law_Firm_Management.Controllers
             }
 
             using var conn = new SqlConnection(_connectionString);
+            conn.Open();
+
+            if (EinAlreadyInUse(conn, vm.EIN, 0))
+            {
+                ModelState.AddModelError(nameof(vm.EIN), "Another client already uses this EIN.");
+                vm.ContactTypeOptions = ContactTypeOptions;
+                vm.ClientTypeOptions = GetClientTypeSelectOptions();
+                return View(vm);
+            }
+
             using var cmd = new SqlCommand(@"
 INSERT INTO dbo.Client
 (
@@ -225,7 +235,6 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
             cmd.Parameters.AddWithValue("@CreatedBy", User?.Identity?.Name ?? "System");
             cmd.Parameters.AddWithValue("@UpdatedBy", User?.Identity?.Name ?? "System");
 
-            conn.Open();
             int newId = (int)cmd.ExecuteScalar();
 
             AddAudit(newId, "Client", newId, "Insert", $"Created client {vm.ClientName}");
@@ -275,11 +284,25 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
                 return View(vm);
             }
 
+            using var conn = new SqlConnection(_connectionString);
+            conn.Open();
+
+            if (EinAlreadyInUse(conn, vm.EIN, vm.ClientId))
+            {
+                ModelState.AddModelError(nameof(vm.EIN), "Another client already uses this EIN.");
+                vm.ContactTypeOptions = ContactTypeOptions;
+                vm.ClientTypeOptions = GetClientTypeSelectOptions();
+                vm.Contacts = GetContacts(vm.ClientId);
+                vm.Notes = GetNotes(vm.ClientId);
+                vm.AuditHistory = GetAuditHistory(vm.ClientId);
+                vm.Documents = GetDocuments(vm.ClientId);
+                return View(vm);
+            }
+
             // #3 (Aug 21) - fetched before the UPDATE below runs, so this is a real before/after
             // comparison, not just the posted value on its own.
             var oldClientName = GetClientNameById(vm.ClientId);
 
-            using var conn = new SqlConnection(_connectionString);
             using var cmd = new SqlCommand(@"
 UPDATE dbo.Client
 SET
@@ -318,7 +341,6 @@ WHERE ClientId = @ClientId;", conn);
             cmd.Parameters.AddWithValue("@ProfileNotes", (object?)vm.ProfileNotes ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@UpdatedBy", User?.Identity?.Name ?? "System");
 
-            conn.Open();
             cmd.ExecuteNonQuery();
 
             AddAudit(vm.ClientId, "Client", vm.ClientId, "Update", $"Updated client {vm.ClientName}");
@@ -2153,6 +2175,34 @@ VALUES
         /// Mirrors LawFirmController's version.</summary>
         private static string? NormalizeEin(string? ein) =>
             string.IsNullOrWhiteSpace(ein) ? null : ein.Trim();
+
+        /// <summary>Whether an EIN value is already on another client's row - two client
+        /// records sharing one taxpayer number is exactly what a 1099 can't survive, so Create/Edit
+        /// block on it. Runs on the caller's already-open connection so each POST pays for one
+        /// connection, not two. The column is compared as-is: NormalizeEin trims the incoming
+        /// value and every write path stores it through NormalizeEin, so stored EINs carry no
+        /// padding. Blank EINs never conflict, since a missing EIN is common and not a duplicate.
+        /// excludeClientId lets Edit check every OTHER row, not itself.
+        /// Mirrors LawFirmController's version.</summary>
+        private bool EinAlreadyInUse(SqlConnection conn, string? ein, int excludeClientId = 0)
+        {
+            var normalized = NormalizeEin(ein);
+            if (normalized == null)
+                return false;
+
+            using var cmd = new SqlCommand(@"
+SELECT COUNT(*)
+FROM dbo.Client
+WHERE EIN = @Ein
+  AND ClientId <> @ExcludeClientId;", conn);
+
+            // Typed as VarChar to match the varchar(20) column - an NVarChar parameter would
+            // make SQL Server convert the column and discard any index seek on EIN.
+            cmd.Parameters.Add("@Ein", SqlDbType.VarChar, 20).Value = normalized;
+            cmd.Parameters.AddWithValue("@ExcludeClientId", excludeClientId);
+
+            return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+        }
 
         private List<ClientContactVm> GetContacts(int clientId)
         {
