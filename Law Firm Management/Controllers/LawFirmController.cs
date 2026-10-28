@@ -215,6 +215,16 @@ ORDER BY UploadedDate DESC, LawFirmDocumentId DESC;", conn);
             }
 
             using var conn = new SqlConnection(_connectionString);
+            conn.Open();
+
+            if (EinAlreadyInUse(conn, vm.EIN, 0))
+            {
+                ModelState.AddModelError(nameof(vm.EIN), "Another law firm already uses this EIN.");
+                vm.StateCodeOptions = StateCodeOptions;
+                vm.ContactTypeOptions = ContactTypeOptions;
+                return View(vm);
+            }
+
             using var cmd = new SqlCommand(@"
 INSERT INTO dbo.LawFirm
 (
@@ -275,7 +285,6 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
             cmd.Parameters.AddWithValue("@CreatedBy", User?.Identity?.Name ?? "System");
             cmd.Parameters.AddWithValue("@UpdatedBy", User?.Identity?.Name ?? "System");
 
-            conn.Open();
             int newId = (int)cmd.ExecuteScalar();
 
             AddAudit(newId, "LawFirm", newId, "Insert", $"Created law firm {vm.FirmName}");
@@ -380,6 +389,20 @@ VALUES
             }
 
             using var conn = new SqlConnection(_connectionString);
+            conn.Open();
+
+            if (EinAlreadyInUse(conn, vm.EIN, vm.LawFirmId))
+            {
+                ModelState.AddModelError(nameof(vm.EIN), "Another law firm already uses this EIN.");
+                vm.StateCodeOptions = StateCodeOptions;
+                vm.ContactTypeOptions = ContactTypeOptions;
+                vm.StateMappings = GetStateMappings(vm.LawFirmId);
+                vm.Contacts = GetContacts(vm.LawFirmId);
+                vm.Notes = GetNotes(vm.LawFirmId);
+                vm.AuditHistory = GetAuditHistory(vm.LawFirmId);
+                return View(vm);
+            }
+
             using var cmd = new SqlCommand(@"
 UPDATE dbo.LawFirm
 SET
@@ -416,7 +439,6 @@ WHERE LawFirmId = @LawFirmId;", conn);
             cmd.Parameters.AddWithValue("@ProfileNotes", (object?)vm.ProfileNotes ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@UpdatedBy", User?.Identity?.Name ?? "System");
 
-            conn.Open();
             cmd.ExecuteNonQuery();
 
 
@@ -1323,6 +1345,34 @@ VALUES
         /// Mirrors ClientController's version.</summary>
         private static string? NormalizeEin(string? ein) =>
             string.IsNullOrWhiteSpace(ein) ? null : ein.Trim();
+
+        /// <summary>Whether an EIN value is already on another law firm's row - two vendor
+        /// records sharing one taxpayer number is exactly what a 1099 can't survive, so Create/Edit
+        /// block on it. Runs on the caller's already-open connection so each POST pays for one
+        /// connection, not two. The column is compared as-is: NormalizeEin trims the incoming
+        /// value and every write path stores it through NormalizeEin, so stored EINs carry no
+        /// padding. Blank EINs never conflict, since a missing EIN is common and not a duplicate.
+        /// excludeLawFirmId lets Edit check every OTHER row, not itself.
+        /// Mirrors ClientController's version.</summary>
+        private bool EinAlreadyInUse(SqlConnection conn, string? ein, int excludeLawFirmId = 0)
+        {
+            var normalized = NormalizeEin(ein);
+            if (normalized == null)
+                return false;
+
+            using var cmd = new SqlCommand(@"
+SELECT COUNT(*)
+FROM dbo.LawFirm
+WHERE EIN = @Ein
+  AND LawFirmId <> @ExcludeLawFirmId;", conn);
+
+            // Typed as VarChar to match the varchar(20) column - an NVarChar parameter would
+            // make SQL Server convert the column and discard any index seek on EIN.
+            cmd.Parameters.Add("@Ein", SqlDbType.VarChar, 20).Value = normalized;
+            cmd.Parameters.AddWithValue("@ExcludeLawFirmId", excludeLawFirmId);
+
+            return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+        }
 
         private static List<LawFirmListRowVm> SortRows(List<LawFirmListRowVm> rows, string sort, string dir)
         {

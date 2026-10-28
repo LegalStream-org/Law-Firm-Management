@@ -60,7 +60,8 @@
         </div>
         <div class="col-md-4">
             <label class="form-label">EIN</label>
-            <input asp-for="EIN" class="form-control" placeholder="12-3456789" />
+            <input asp-for="EIN" class="form-control" placeholder="12-3456789 or 123-45-6789" />
+            <span asp-validation-for="EIN" class="text-danger"></span>
         </div>
         <div class="col-md-4">
             <label class="form-label">Profile Notes</label>
@@ -74,3 +75,7 @@
         <a asp-action="Index" class="btn btn-secondary">Cancel</a>
     </div>
 </form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
