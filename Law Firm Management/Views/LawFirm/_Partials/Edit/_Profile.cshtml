@@ -1,17 +1,20 @@
 @model Law_Firm_Management.Models.LawFirmEditVm
 @{
+    var L = Law_Firm_Management.Models.LawFirmRecordLabels.From(ViewData);
+}
+@{
     var mainFormId = "lawFirmProfileForm";
 }
 
-<!-- Firm Profile -->
+<!-- Profile -->
 <div class="card lf-card mb-3">
     <div class="card-header">
-        <h5 class="mb-0">Firm Profile</h5>
-        <div class="text-muted small">Basic firm information and profile notes.</div>
+        <h5 class="mb-0">@L.Short Profile</h5>
+        <div class="text-muted small">Basic @(L.Short.ToLower()) information and profile notes.</div>
     </div>
 
     <div class="card-body">
-        <form id="@mainFormId" asp-action="Edit" asp-controller="LawFirm" method="post">
+        <form id="@mainFormId" asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
 
             <input type="hidden" asp-for="LawFirmId" />
@@ -19,7 +22,7 @@
             <div class="row g-3">
 
                 <div class="col-md-6">
-                    <label asp-for="FirmName" class="form-label">Firm Name</label>
+                    <label asp-for="FirmName" class="form-label">@L.Short Name</label>
                     <input asp-for="FirmName" class="form-control" />
                     <span asp-validation-for="FirmName" class="text-danger"></span>
                 </div>

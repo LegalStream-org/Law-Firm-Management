@@ -476,6 +476,13 @@
                         <span class="nav-text">Agency List</span>
                     </a>
 
+                    <a class="side-link @(currentController == "Agency" && currentAction == "Create" ? "active" : "")"
+                       asp-controller="Agency"
+                       asp-action="Create">
+                        <span class="nav-icon">➕</span>
+                        <span class="nav-text">Add New Agency</span>
+                    </a>
+
                     <a class="side-link"
                        asp-controller="Agency"
                        asp-action="Export">

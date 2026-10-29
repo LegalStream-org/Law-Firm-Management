@@ -1,4 +1,7 @@
 @model Law_Firm_Management.Models.LawFirmEditVm
+@{
+    var L = Law_Firm_Management.Models.LawFirmRecordLabels.From(ViewData);
+}
 
 <div class="card lf-card">
     <div class="card-header">
@@ -6,10 +9,10 @@
     </div>
 
     <div class="card-body">
-        <form asp-action="DeleteFirm" asp-controller="LawFirm" method="post" onsubmit="return confirm('Delete this Firm?');">
+        <form asp-action="DeleteFirm" method="post" onsubmit="return confirm('Delete this @(L.Full.ToLower())?');">
             @Html.AntiForgeryToken()
             <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
-            <button type="submit" class="btn btn-danger w-100">Delete Firm</button>
+            <button type="submit" class="btn btn-danger w-100">Delete @L.Short</button>
         </form>
     </div>
 </div>

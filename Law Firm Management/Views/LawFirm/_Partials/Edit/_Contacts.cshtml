@@ -71,14 +71,14 @@
 
                                 <td>
                                     <div class="d-flex gap-1">
-                                        <form id="@formId" asp-action="UpdateContact" asp-controller="LawFirm" method="post" class="d-inline">
+                                        <form id="@formId" asp-action="UpdateContact" method="post" class="d-inline">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="LawFirmContactId" value="@c.LawFirmContactId" />
                                             <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
                                             <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
                                         </form>
 
-                                        <form asp-action="DeleteContact" asp-controller="LawFirm" method="post" class="d-inline" onsubmit="return confirm('Delete this contact?');">
+                                        <form asp-action="DeleteContact" method="post" class="d-inline" onsubmit="return confirm('Delete this contact?');">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="lawFirmContactId" value="@c.LawFirmContactId" />
                                             <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
@@ -95,7 +95,7 @@
 
         <hr />
 
-        <form asp-action="AddContact" asp-controller="LawFirm" method="post" class="row g-2">
+        <form asp-action="AddContact" method="post" class="row g-2">
             @Html.AntiForgeryToken()
 
             <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />

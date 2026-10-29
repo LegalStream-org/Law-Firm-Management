@@ -1,15 +1,18 @@
 @model Law_Firm_Management.Models.LawFirmEditVm
+@{
+    var L = Law_Firm_Management.Models.LawFirmRecordLabels.From(ViewData);
+}
 
 <!-- Notes -->
 <div class="card lf-card mb-3">
     <div class="card-header">
         <h5 class="mb-0">Notes</h5>
-        <div class="text-muted small">Internal note history for this firm.</div>
+        <div class="text-muted small">Internal note history for this @(L.Short.ToLower()).</div>
     </div>
 
     <div class="card-body">
 
-        <form asp-action="AddNote" asp-controller="LawFirm" method="post" class="row g-2 mb-3">
+        <form asp-action="AddNote" method="post" class="row g-2 mb-3">
             @Html.AntiForgeryToken()
 
             <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
@@ -68,14 +71,14 @@
 
                                 <td>
                                     <div class="d-flex gap-1">
-                                        <form id="@formId" asp-action="UpdateNote" asp-controller="LawFirm" method="post" class="d-inline">
+                                        <form id="@formId" asp-action="UpdateNote" method="post" class="d-inline">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="LawFirmNoteId" value="@n.LawFirmNoteId" />
                                             <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
                                             <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
                                         </form>
 
-                                        <form asp-action="DeleteNote" asp-controller="LawFirm" method="post" class="d-inline" onsubmit="return confirm('Delete this note?');">
+                                        <form asp-action="DeleteNote" method="post" class="d-inline" onsubmit="return confirm('Delete this note?');">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="lawFirmNoteId" value="@n.LawFirmNoteId" />
                                             <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />

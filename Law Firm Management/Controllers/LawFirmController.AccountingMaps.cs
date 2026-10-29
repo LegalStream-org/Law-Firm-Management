@@ -193,7 +193,8 @@ WHERE LawFirmAccountingMapId = @LawFirmAccountingMapId;", conn);
             m.LawFirmAccountingMapId,
             m.LawFirmId,
             lf.FirmName,
-            lf.Status
+            lf.Status,
+            lf.EntityType
         FROM dbo.LawFirmAccountingMap m
         JOIN dbo.LawFirm lf ON lf.LawFirmId = m.LawFirmId
         WHERE m.AccountingFirmName = @AccountingFirmName
@@ -215,7 +216,8 @@ WHERE LawFirmAccountingMapId = @LawFirmAccountingMapId;", conn);
                     LawFirmAccountingMapId = Convert.ToInt32(rdr["LawFirmAccountingMapId"]),
                     LawFirmId = Convert.ToInt32(rdr["LawFirmId"]),
                     FirmName = rdr["FirmName"]?.ToString(),
-                    Status = rdr["Status"]?.ToString()
+                    Status = rdr["Status"]?.ToString(),
+                    EntityType = rdr["EntityType"]?.ToString()
                 });
             }
 
@@ -230,9 +232,14 @@ WHERE LawFirmAccountingMapId = @LawFirmAccountingMapId;", conn);
         private static string DescribeConflictOwners(List<ConflictingAccountingMapRow> rows)
         {
             return string.Join(", ", rows
-                .Select(r => string.Equals(r.Status, "Active", StringComparison.OrdinalIgnoreCase)
-                    ? r.FirmName
-                    : $"{r.FirmName} (Inactive)")
+                .Select(r =>
+                {
+                    // Agency tracking: name the owner's type when it's an agency, alongside Inactive.
+                    var tags = new List<string>();
+                    if (r.EntityType == LawFirmRecordType.Agency) tags.Add("Agency");
+                    if (!string.Equals(r.Status, "Active", StringComparison.OrdinalIgnoreCase)) tags.Add("Inactive");
+                    return tags.Count == 0 ? r.FirmName : $"{r.FirmName} ({string.Join(", ", tags)})";
+                })
                 .Distinct());
         }
 
@@ -246,6 +253,9 @@ WHERE LawFirmAccountingMapId = @LawFirmAccountingMapId;", conn);
 
             /// <summary>The owning firm's status - labelled in the warning, never filtered on.</summary>
             public string? Status { get; set; }
+
+            /// <summary>Firm or Agency - labelled in the warning, never filtered on.</summary>
+            public string? EntityType { get; set; }
         }
 
         /// <summary>

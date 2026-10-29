@@ -24,7 +24,7 @@ namespace Law_Firm_Management.Controllers
         {
             if (vm.LawFirmId <= 0)
             {
-                TempData["Error"] = "Invalid law firm.";
+                TempData["Error"] = $"Invalid {Labels.Full.ToLower()}.";
                 return RedirectToAction(returnAction, new { id = vm.LawFirmId });
             }
 

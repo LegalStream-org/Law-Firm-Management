@@ -1,15 +1,18 @@
 @model Law_Firm_Management.Models.LawFirmEditVm
+@{
+    var L = Law_Firm_Management.Models.LawFirmRecordLabels.From(ViewData);
+}
 
 <!-- Documents -->
 <div class="card lf-card mb-3">
     <div class="card-header">
         <h5 class="mb-0">Documents</h5>
-        <div class="text-muted small">Contracts, NDAs, and other firm documents.</div>
+        <div class="text-muted small">Contracts, NDAs, and other @(L.Short.ToLower()) documents.</div>
     </div>
 
     <div class="card-body">
 
-        <form asp-action="AddDocument" asp-controller="LawFirm" method="post" enctype="multipart/form-data" class="row g-2 mb-4">
+        <form asp-action="AddDocument" method="post" enctype="multipart/form-data" class="row g-2 mb-4">
             @Html.AntiForgeryToken()
 
             <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
@@ -105,14 +108,12 @@
                                 <td>
                                     <div class="d-flex flex-wrap gap-1 mb-2">
                                         <a asp-action="DownloadDocument"
-                                           asp-controller="LawFirm"
                                            asp-route-id="@d.LawFirmDocumentId"
                                            class="btn btn-sm btn-outline-primary">
                                             Download
                                         </a>
 
                                         <form asp-action="DeleteDocument"
-                                              asp-controller="LawFirm"
                                               method="post"
                                               class="d-inline"
                                               onsubmit="return confirm('Delete this document?');">
@@ -126,7 +127,6 @@
 
                                     <form id="@replaceFormId"
                                           asp-action="ReplaceDocument"
-                                          asp-controller="LawFirm"
                                           method="post"
                                           enctype="multipart/form-data"
                                           class="row g-1">

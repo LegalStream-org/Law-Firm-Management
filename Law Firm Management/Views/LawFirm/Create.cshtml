@@ -1,15 +1,16 @@
 ﻿@model Law_Firm_Management.Models.LawFirmEditVm
 
 @{
-    ViewData["Title"] = "Add Law Firm";
+    var L = Law_Firm_Management.Models.LawFirmRecordLabels.From(ViewData);
+    ViewData["Title"] = $"Add {L.Full}";
 }
 
-<h2>Add Law Firm</h2>
+<h2>Add @L.Full</h2>
 
 <form asp-action="Create" method="post">
     <div class="row g-3">
         <div class="col-md-6">
-            <label class="form-label">Firm Name</label>
+            <label class="form-label">@L.Short Name</label>
             <input asp-for="FirmName" class="form-control" />
         </div>
         <div class="col-md-3">

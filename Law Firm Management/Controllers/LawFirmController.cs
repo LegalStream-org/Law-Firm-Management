@@ -61,6 +61,27 @@ ORDER BY CASE WHEN EntityType = @RecordType THEN 0 ELSE 1 END, LawFirmId;", conn
             return (Convert.ToInt32(rdr["LawFirmId"]), null);
         }
 
+        /// <summary>The record's EntityType, or null if the record doesn't exist.</summary>
+        private string? GetRecordTypeById(int lawFirmId)
+        {
+            using var conn = new SqlConnection(_connectionString);
+            using var cmd = new SqlCommand("SELECT EntityType FROM dbo.LawFirm WHERE LawFirmId = @LawFirmId;", conn);
+            cmd.Parameters.AddWithValue("@LawFirmId", lawFirmId);
+            conn.Open();
+            return cmd.ExecuteScalar() as string;
+        }
+
+        /// <summary>Sends a record of the other type to its own pages, e.g. LawFirm/Edit/5 -> Agency/Edit/5.</summary>
+        private IActionResult? RedirectIfOtherType(int lawFirmId, string action)
+        {
+            var type = GetRecordTypeById(lawFirmId);
+            if (type == null || string.Equals(type, RecordType, StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            var controller = type == LawFirmRecordType.Agency ? "Agency" : "LawFirm";
+            return RedirectToAction(action, controller, new { id = lawFirmId });
+        }
+
         private static string DescribeType(string? recordType) =>
             string.Equals(recordType, LawFirmRecordType.Agency, StringComparison.OrdinalIgnoreCase)
                 ? "an agency"
@@ -214,7 +235,7 @@ ORDER BY CASE WHEN EntityType = @RecordType THEN 0 ELSE 1 END, LawFirmId;", conn
 
             if (EinAlreadyInUse(conn, vm.EIN, 0))
             {
-                ModelState.AddModelError(nameof(vm.EIN), "Another law firm already uses this EIN.");
+                ModelState.AddModelError(nameof(vm.EIN), "Another law firm or agency already uses this EIN.");
                 vm.StateCodeOptions = StateCodeOptions;
                 vm.ContactTypeOptions = ContactTypeOptions;
                 return View(vm);
@@ -286,9 +307,9 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
 
             int newId = (int)cmd.ExecuteScalar();
 
-            AddAudit(newId, "LawFirm", newId, "Insert", $"Created law firm {vm.FirmName}");
+            AddAudit(newId, "LawFirm", newId, "Insert", $"Created {Labels.Full.ToLower()} {vm.FirmName}");
 
-            TempData["Message"] = "Law firm created.";
+            TempData["Message"] = $"{Labels.Full} created.";
             return RedirectToAction(nameof(Edit), new { id = newId });
         }
 
@@ -351,6 +372,10 @@ VALUES
         [HttpGet]
         public IActionResult Edit(int id)
         {
+            var otherType = RedirectIfOtherType(id, nameof(Edit));
+            if (otherType != null)
+                return otherType;
+
             var vm = GetLawFirmEditVm(id);
             if (vm == null)
                 return NotFound();
@@ -392,7 +417,7 @@ VALUES
 
             if (EinAlreadyInUse(conn, vm.EIN, vm.LawFirmId))
             {
-                ModelState.AddModelError(nameof(vm.EIN), "Another law firm already uses this EIN.");
+                ModelState.AddModelError(nameof(vm.EIN), "Another law firm or agency already uses this EIN.");
                 vm.StateCodeOptions = StateCodeOptions;
                 vm.ContactTypeOptions = ContactTypeOptions;
                 vm.StateMappings = GetStateMappings(vm.LawFirmId);
@@ -442,15 +467,19 @@ WHERE LawFirmId = @LawFirmId;", conn);
 
 
 
-            AddAudit(vm.LawFirmId, "LawFirm", vm.LawFirmId, "Update", $"Updated law firm {vm.FirmName}");
+            AddAudit(vm.LawFirmId, "LawFirm", vm.LawFirmId, "Update", $"Updated {Labels.Full.ToLower()} {vm.FirmName}");
 
-            TempData["Message"] = "Law firm updated.";
+            TempData["Message"] = $"{Labels.Full} updated.";
             return RedirectToAction(nameof(Edit), new { id = vm.LawFirmId });
         }
 
         [HttpGet]
         public IActionResult Details(int id)
         {
+            var otherType = RedirectIfOtherType(id, nameof(Details));
+            if (otherType != null)
+                return otherType;
+
             var vm = GetLawFirmEditVm(id);
             if (vm == null)
                 return NotFound();
@@ -495,7 +524,7 @@ WHERE LawFirmId = @LawFirmId;", conn);
                 cmd.ExecuteNonQuery();
             }
 
-            TempData["Message"] = "Law firm deleted.";
+            TempData["Message"] = $"{Labels.Full} deleted.";
             return RedirectToAction(nameof(Index));
         }
 

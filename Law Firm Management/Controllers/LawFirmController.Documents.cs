@@ -72,7 +72,7 @@ ORDER BY UploadedDate DESC, LawFirmDocumentId DESC;", conn);
         {
             if (vm.LawFirmId <= 0)
             {
-                TempData["Error"] = "Invalid law firm.";
+                TempData["Error"] = $"Invalid {Labels.Full.ToLower()}.";
                 return RedirectToAction(returnAction, new { id = vm.LawFirmId });
             }
 

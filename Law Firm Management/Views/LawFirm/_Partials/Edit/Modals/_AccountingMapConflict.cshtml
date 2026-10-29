@@ -1,4 +1,7 @@
 @model Law_Firm_Management.Models.LawFirmEditVm
+@{
+    var L = Law_Firm_Management.Models.LawFirmRecordLabels.From(ViewData);
+}
 
 @* Sep 08 - reassignment confirmation, rendered only right after Add/UpdateAccountingMap bounced back
    on a mapping another firm holds. Continue replays the refused post from the stashed attempt (the
@@ -18,16 +21,16 @@
                 </div>
                 <div class="modal-body">
                     <p class="mb-0">
-                        This accounting mapping is already associated with law firm
+                        This accounting mapping is already associated with
                         <strong>@pending.ExistingFirmName</strong>. If you continue, the existing
                         mapping will be deleted from <strong>@pending.ExistingFirmName</strong> and
-                        assigned to the current law firm. Do you want to continue?
+                        assigned to the current @(L.Full.ToLower()). Do you want to continue?
                     </p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 
-                    <form asp-action="@pending.PostAction" asp-controller="LawFirm" method="post" class="d-inline">
+                    <form asp-action="@pending.PostAction" method="post" class="d-inline">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="lawFirmId" value="@pending.LawFirmId" />
                         <input type="hidden" name="lawFirmAccountingMapId" value="@pending.LawFirmAccountingMapId" />

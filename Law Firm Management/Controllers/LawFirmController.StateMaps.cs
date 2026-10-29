@@ -60,7 +60,7 @@ WHERE LawFirmId = @LawFirmId
 
                 if (exists > 0)
                 {
-                    TempData["Error"] = "That state and portfolio are already mapped for this firm.";
+                    TempData["Error"] = $"That state and portfolio are already mapped for this {Labels.Short.ToLower()}.";
                     return RedirectToAction(nameof(Edit), new { id = vm.LawFirmId });
                 }
             }
@@ -147,7 +147,7 @@ WHERE LawFirmId = @LawFirmId
 
                 if (exists > 0)
                 {
-                    TempData["Error"] = "That state and portfolio are already mapped for this firm.";
+                    TempData["Error"] = $"That state and portfolio are already mapped for this {Labels.Short.ToLower()}.";
                     return RedirectToAction(nameof(Edit), new { id = vm.LawFirmId });
                 }
             }
