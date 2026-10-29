@@ -1,29 +1,30 @@
 ﻿@{
-    ViewData["Title"] = "Import Law Firms";
+    var L = Law_Firm_Management.Models.LawFirmRecordLabels.From(ViewData);
+    ViewData["Title"] = $"Import {L.FullPlural}";
 }
 
-<h2>Import Law Firms</h2>
+<h2>Import @L.FullPlural</h2>
 
-<form asp-action="Import" asp-controller="LawFirm" method="post" enctype="multipart/form-data">
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-warning">@Html.Raw(TempData["Error"])</div>
+}
+
+<form asp-action="Import" method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
 
     <div class="mb-3">
         <label for="file" class="form-label">CSV File</label>
-        <input type="file" name="file" class="form-control" accept=".csv" />
+        <input type="file" name="file" id="file" class="form-control" accept=".csv" />
+        <div class="form-text">New records are added to the @L.FullPlural list. A name already used by a law firm or agency is skipped.</div>
     </div>
 
     <button type="submit" class="btn btn-primary">Import</button>
     <a asp-action="DownloadLawFirmTemplate" class="btn btn-outline-secondary">Download Template</a>
+    <a asp-action="Index" class="btn btn-secondary">Back</a>
 </form>
-
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success mt-3">@TempData["Success"]</div>
-}
-
-@if (TempData["Errors"] != null)
-{
-    <div class="alert alert-warning mt-3">
-        @Html.Raw(TempData["Errors"])
-    </div>
-}

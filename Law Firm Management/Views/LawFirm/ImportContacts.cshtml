@@ -1,8 +1,9 @@
 ﻿@{
-    ViewData["Title"] = "Import Contacts";
+    var L = Law_Firm_Management.Models.LawFirmRecordLabels.From(ViewData);
+    ViewData["Title"] = $"Import {L.Short} Contacts";
 }
 
-<h2>Import Contacts</h2>
+<h2>Import @L.Short Contacts</h2>
 
 @if (TempData["Message"] != null)
 {
@@ -14,12 +15,13 @@
     <div class="alert alert-warning">@Html.Raw(TempData["Error"])</div>
 }
 
-<form asp-action="ImportContacts" asp-controller="LawFirm" method="post" enctype="multipart/form-data">
+<form asp-action="ImportContacts" method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
 
     <div class="mb-3">
         <label for="file" class="form-label">CSV File</label>
-        <input type="file" name="file" class="form-control" accept=".csv" />
+        <input type="file" name="file" id="file" class="form-control" accept=".csv" />
+        <div class="form-text">The FirmName column must match an existing @(L.Full.ToLower()) name exactly.</div>
     </div>
 
     <button type="submit" class="btn btn-primary">Import Contacts</button>

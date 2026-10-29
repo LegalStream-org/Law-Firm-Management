@@ -483,6 +483,27 @@
                         <span class="nav-text">Add New Agency</span>
                     </a>
 
+                    <a class="side-link @(currentController == "Agency" && currentAction == "Import" ? "active" : "")"
+                       asp-controller="Agency"
+                       asp-action="Import">
+                        <span class="nav-icon">📥</span>
+                        <span class="nav-text">Import Agencies</span>
+                    </a>
+
+                    <a class="side-link @(currentController == "Agency" && currentAction == "ImportContacts" ? "active" : "")"
+                       asp-controller="Agency"
+                       asp-action="ImportContacts">
+                        <span class="nav-icon">👥</span>
+                        <span class="nav-text">Import Contacts</span>
+                    </a>
+
+                    <a class="side-link @(currentController == "Agency" && currentAction == "ImportStateMappings" ? "active" : "")"
+                       asp-controller="Agency"
+                       asp-action="ImportStateMappings">
+                        <span class="nav-icon">🗺️</span>
+                        <span class="nav-text">Import State Mappings</span>
+                    </a>
+
                     <a class="side-link"
                        asp-controller="Agency"
                        asp-action="Export">

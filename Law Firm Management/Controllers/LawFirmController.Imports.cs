@@ -187,7 +187,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
 
                     int newId = Convert.ToInt32(cmd.ExecuteScalar());
 
-                    AddAudit(newId, "LawFirm", newId, "Insert", $"Imported law firm {firmName}");
+                    AddAudit(newId, "LawFirm", newId, "Insert", $"Imported {Labels.Full.ToLower()} {firmName}");
 
                     inserted++;
                 }
@@ -197,24 +197,27 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
                 }
             }
 
-            TempData["Message"] = $"{inserted} law firm(s) imported.";
+            TempData["Message"] = $"Imported {inserted} {(inserted == 1 ? Labels.Full : Labels.FullPlural).ToLower()}.";
             if (errors.Any())
             {
-                TempData["Error"] = string.Join("<br/>", errors);
+                TempData["Error"] = string.Join("<br/>", errors.Select(System.Net.WebUtility.HtmlEncode));
             }
 
             return RedirectToAction(nameof(Index));
         }
+
+        /// <summary>"LawFirm" or "Agency", so downloaded templates say which list they're for.</summary>
+        private string TemplatePrefix => Labels.Full.Replace(" ", "");
 
         [HttpGet]
         public IActionResult DownloadLawFirmTemplate()
         {
             var csv = new System.Text.StringBuilder();
             csv.AppendLine("FirmName,ShortName,Status,MainPhone,MainEmail,Website,Address1,Address2,City,State,Zip,ProfileNotes");
-            csv.AppendLine("Test Firm,SJ Law,Active,555-111-2222,info@sjlaw.com,https://www.sjlaw.com,123 Main St,,Kansas City,MO,64101,Primary partner firm");
+            csv.AppendLine($"Test {Labels.Short},SJ Law,Active,555-111-2222,info@sjlaw.com,https://www.sjlaw.com,123 Main St,,Kansas City,MO,64101,Primary partner firm");
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
-            return File(bytes, "text/csv", "LawFirmImportTemplate.csv");
+            return File(bytes, "text/csv", $"{TemplatePrefix}ImportTemplate.csv");
         }
 
     
@@ -384,7 +387,7 @@ VALUES
 
             TempData["Message"] = $"{inserted} contact(s) imported.";
             if (errors.Any())
-                TempData["Error"] = string.Join("<br/>", errors);
+                TempData["Error"] = string.Join("<br/>", errors.Select(System.Net.WebUtility.HtmlEncode));
 
             return RedirectToAction(nameof(Index));
         }
@@ -394,10 +397,10 @@ VALUES
         {
             var csv = new System.Text.StringBuilder();
             csv.AppendLine("FirmName,ContactType,ContactName,Title,Email,Phone,PreferredContactMethod,IsActive,Notes");
-            csv.AppendLine("Test Firm,IT,John Smith,Manager,john@test.com,555-111-2222,Email,true,Main IT contact");
+            csv.AppendLine($"Test {Labels.Short},IT,John Smith,Manager,john@test.com,555-111-2222,Email,true,Main IT contact");
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
-            return File(bytes, "text/csv", "LawFirmContactImportTemplate.csv");
+            return File(bytes, "text/csv", $"{TemplatePrefix}ContactImportTemplate.csv");
         }
 
         [HttpGet]
@@ -601,7 +604,7 @@ VALUES
 
             TempData["Message"] = $"{inserted} state mapping(s) imported.";
             if (errors.Any())
-                TempData["Error"] = string.Join("<br/>", errors);
+                TempData["Error"] = string.Join("<br/>", errors.Select(System.Net.WebUtility.HtmlEncode));
 
             return RedirectToAction(nameof(Index));
         }
@@ -611,10 +614,10 @@ VALUES
         {
             var csv = new System.Text.StringBuilder();
             csv.AppendLine("FirmName,StateCode,COCO_NO,ExportId,PlacementPercent,Portfolio,SftpFolderPath,IsActive,Notes");
-            csv.AppendLine("Test Firm,LA,23234,rere,100.00,Contingency,LS9873,0,Sample Louisiana mapping");
+            csv.AppendLine($"Test {Labels.Short},LA,23234,rere,100.00,Contingency,LS9873,0,Sample Louisiana mapping");
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
-            return File(bytes, "text/csv", "LawFirmStateMappingImportTemplate.csv");
+            return File(bytes, "text/csv", $"{TemplatePrefix}StateMappingImportTemplate.csv");
         }
     }
 }
