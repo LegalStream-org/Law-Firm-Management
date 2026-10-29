@@ -20,6 +20,41 @@ namespace Law_Firm_Management.Controllers
         /// writing actions and the Edit GET that reads it can't drift.</summary>
         private const string AccountingMapConflictKey = "AccountingMapConflict";
 
+        /// <summary>Which LawFirm rows this controller manages (EntityType). AgencyController overrides it.</summary>
+        protected virtual string RecordType => LawFirmRecordType.Firm;
+
+        /// <summary>VarChar(20) to match the column, so the EntityType index can be used.</summary>
+        private void AddRecordTypeParam(SqlCommand cmd) =>
+            cmd.Parameters.Add("@RecordType", SqlDbType.VarChar, 20).Value = RecordType;
+
+        /// <summary>Finds a record by name within this controller's type; says so if it belongs to the other type.</summary>
+        private (int? LawFirmId, string? Error) FindRecordIdByName(SqlConnection conn, string name)
+        {
+            using var cmd = new SqlCommand(@"
+SELECT TOP 1 LawFirmId, EntityType
+FROM dbo.LawFirm
+WHERE FirmName = @FirmName
+ORDER BY CASE WHEN EntityType = @RecordType THEN 0 ELSE 1 END, LawFirmId;", conn);
+
+            cmd.Parameters.AddWithValue("@FirmName", name);
+            AddRecordTypeParam(cmd);
+
+            using var rdr = cmd.ExecuteReader();
+            if (!rdr.Read())
+                return (null, $"'{name}' was not found.");
+
+            var foundType = rdr["EntityType"]?.ToString();
+            if (!string.Equals(foundType, RecordType, StringComparison.OrdinalIgnoreCase))
+                return (null, $"'{name}' is set up as {DescribeType(foundType)}, so it can't be imported here.");
+
+            return (Convert.ToInt32(rdr["LawFirmId"]), null);
+        }
+
+        private static string DescribeType(string? recordType) =>
+            string.Equals(recordType, LawFirmRecordType.Agency, StringComparison.OrdinalIgnoreCase)
+                ? "an agency"
+                : "a law firm";
+
         private static readonly List<string> StateCodeOptions = new()
         {
             "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
@@ -241,6 +276,7 @@ INSERT INTO dbo.LawFirm
     Zip,
     EIN,
     Notes,
+    EntityType,
     CreatedBy,
     CreatedDate,
     UpdatedBy,
@@ -261,6 +297,7 @@ VALUES
     @Zip,
     @EIN,
     @ProfileNotes,
+    @RecordType,
     @CreatedBy,
     GETDATE(),
     @UpdatedBy,
@@ -268,6 +305,8 @@ VALUES
 );
 
 SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
+
+            AddRecordTypeParam(cmd);
 
             cmd.Parameters.AddWithValue("@FirmName", (object?)vm.FirmName ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ShortName", (object?)vm.ShortName ?? DBNull.Value);
@@ -910,7 +949,7 @@ WHERE LawFirmNoteId = @LawFirmNoteId;", conn);
             using var cmd = new SqlCommand(@"
 WITH InvoiceLast AS
 (
-    SELECT 
+    SELECT
         b.LawFirmId,
         MAX(a.TranDate) AS LastInvoice
     FROM Accounting_Data.dbo.FirmInvoices a
@@ -921,7 +960,7 @@ WITH InvoiceLast AS
 ),
 RemitLast AS
 (
-    SELECT 
+    SELECT
         b.LawFirmId,
         MAX(a.TranDate) AS LastRemit
     FROM Accounting_Data.dbo.FirmRemits a
@@ -932,7 +971,7 @@ RemitLast AS
 ),
 CostLast AS
 (
-    SELECT 
+    SELECT
         b.LawFirmId,
         MAX(a.TranDate) AS LastCostFile
     FROM Accounting_Data.dbo.FirmCost a
@@ -970,7 +1009,10 @@ LEFT JOIN ContactCounts cc ON cc.LawFirmId = lf.LawFirmId
 LEFT JOIN InvoiceLast il ON il.LawFirmId = lf.LawFirmId
 LEFT JOIN RemitLast rl ON rl.LawFirmId = lf.LawFirmId
 LEFT JOIN CostLast cl ON cl.LawFirmId = lf.LawFirmId
+WHERE lf.EntityType = @RecordType
 ORDER BY lf.FirmName;", conn);
+
+            AddRecordTypeParam(cmd);
 
             conn.Open();
 
@@ -1705,17 +1747,20 @@ WHERE LawFirmDocumentId = @LawFirmDocumentId;", conn);
                         continue;
                     }
 
+                    // Names are unique across firms and agencies, so name-based imports stay unambiguous.
                     using (var dupCmd = new SqlCommand(@"
-SELECT COUNT(*)
+SELECT TOP 1 EntityType
 FROM dbo.LawFirm
 WHERE FirmName = @FirmName;", conn))
                     {
                         dupCmd.Parameters.AddWithValue("@FirmName", firmName);
 
-                        int exists = Convert.ToInt32(dupCmd.ExecuteScalar());
-                        if (exists > 0)
+                        var existingType = dupCmd.ExecuteScalar() as string;
+                        if (existingType != null)
                         {
-                            errors.Add($"Row {rowNumber}: Firm '{firmName}' already exists.");
+                            errors.Add(string.Equals(existingType, RecordType, StringComparison.OrdinalIgnoreCase)
+                                ? $"Row {rowNumber}: '{firmName}' already exists."
+                                : $"Row {rowNumber}: '{firmName}' already exists as {DescribeType(existingType)}.");
                             continue;
                         }
                     }
@@ -1735,6 +1780,7 @@ INSERT INTO dbo.LawFirm
     [State],
     Zip,
     Notes,
+    EntityType,
     CreatedBy,
     CreatedDate,
     UpdatedBy,
@@ -1754,6 +1800,7 @@ VALUES
     @State,
     @Zip,
     @ProfileNotes,
+    @RecordType,
     @CreatedBy,
     GETDATE(),
     @UpdatedBy,
@@ -1761,6 +1808,8 @@ VALUES
 );
 
 SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
+
+                    AddRecordTypeParam(cmd);
 
                     cmd.Parameters.AddWithValue("@FirmName", (object?)firmName ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@ShortName", (object?)shortName ?? DBNull.Value);
@@ -1809,7 +1858,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
             return File(bytes, "text/csv", "LawFirmImportTemplate.csv");
         }
 
-    
+
 
     [HttpGet]
         public IActionResult ImportContacts()
@@ -1897,23 +1946,14 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
                         }
                     }
 
-                    int lawFirmId;
-                    using (var firmCmd = new SqlCommand(@"
-SELECT LawFirmId
-FROM dbo.LawFirm
-WHERE FirmName = @FirmName;", conn))
+                    // Only attach rows to a record of this controller's type.
+                    var (foundId, lookupError) = FindRecordIdByName(conn, firmName);
+                    if (foundId == null)
                     {
-                        firmCmd.Parameters.AddWithValue("@FirmName", firmName);
-
-                        var firmIdObj = firmCmd.ExecuteScalar();
-                        if (firmIdObj == null || firmIdObj == DBNull.Value)
-                        {
-                            errors.Add($"Row {rowNumber}: Firm '{firmName}' was not found.");
-                            continue;
-                        }
-
-                        lawFirmId = Convert.ToInt32(firmIdObj);
+                        errors.Add($"Row {rowNumber}: {lookupError}");
+                        continue;
                     }
+                    int lawFirmId = foundId.Value;
 
                     using (var dupCmd = new SqlCommand(@"
 SELECT COUNT(*)
@@ -2123,23 +2163,14 @@ VALUES
                         continue;
                     }
 
-                    int lawFirmId;
-                    using (var firmCmd = new SqlCommand(@"
-SELECT LawFirmId
-FROM dbo.LawFirm
-WHERE FirmName = @FirmName;", conn))
+                    // Only attach rows to a record of this controller's type.
+                    var (foundId, lookupError) = FindRecordIdByName(conn, firmName);
+                    if (foundId == null)
                     {
-                        firmCmd.Parameters.AddWithValue("@FirmName", firmName);
-
-                        var firmIdObj = firmCmd.ExecuteScalar();
-                        if (firmIdObj == null || firmIdObj == DBNull.Value)
-                        {
-                            errors.Add($"Row {rowNumber}: Firm '{firmName}' was not found.");
-                            continue;
-                        }
-
-                        lawFirmId = Convert.ToInt32(firmIdObj);
+                        errors.Add($"Row {rowNumber}: {lookupError}");
+                        continue;
                     }
+                    int lawFirmId = foundId.Value;
 
                     using (var dupCmd = new SqlCommand(@"
 SELECT COUNT(*)
@@ -2243,12 +2274,18 @@ VALUES
             // =========================
             // LOAD PORTFOLIO DROPDOWN
             // =========================
+            // StateMap has no type of its own, so join to LawFirm to filter.
             using (var cmd = new SqlCommand(@"
-        SELECT DISTINCT Portfolio
-        FROM dbo.LawFirmStateMap
-        WHERE Portfolio IS NOT NULL
-        ORDER BY Portfolio;", conn))
+        SELECT DISTINCT b.Portfolio
+        FROM dbo.LawFirmStateMap b
+        INNER JOIN dbo.LawFirm a
+            ON a.LawFirmId = b.LawFirmId
+        WHERE b.Portfolio IS NOT NULL
+          AND a.EntityType = @RecordType
+        ORDER BY b.Portfolio;", conn))
             {
+                AddRecordTypeParam(cmd);
+
                 using var rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                 {
@@ -2260,7 +2297,7 @@ VALUES
             // LOAD REPORT DATA
             // =========================
             using (var cmd = new SqlCommand(@"
-        SELECT 
+        SELECT
             b.StateCode,
             a.FirmName,
             b.Portfolio,
@@ -2269,12 +2306,14 @@ VALUES
             b.SftpFolderPath,
             b.PlacementPercent
         FROM dbo.LawFirm a
-        INNER JOIN dbo.LawFirmStateMap b 
+        INNER JOIN dbo.LawFirmStateMap b
             ON b.LawFirmId = a.LawFirmId
         WHERE (@Portfolio = '' OR b.Portfolio = @Portfolio) and b.IsActive = 1
+          AND a.EntityType = @RecordType
         ORDER BY b.StateCode, a.FirmName;", conn))
             {
                 cmd.Parameters.AddWithValue("@Portfolio", portfolio ?? "");
+                AddRecordTypeParam(cmd);
 
                 using var rdr = cmd.ExecuteReader();
 
@@ -2305,7 +2344,7 @@ VALUES
 
             using var conn = new SqlConnection(_connectionString);
             using var cmd = new SqlCommand(@"
-        SELECT 
+        SELECT
             b.StateCode,
             a.FirmName,
             b.Portfolio,
@@ -2314,12 +2353,14 @@ VALUES
             b.SftpFolderPath,
             b.PlacementPercent
         FROM dbo.LawFirm a
-        INNER JOIN dbo.LawFirmStateMap b 
+        INNER JOIN dbo.LawFirmStateMap b
             ON b.LawFirmId = a.LawFirmId
         WHERE (@Portfolio = '' OR b.Portfolio = @Portfolio) and b.IsActive = 1
+          AND a.EntityType = @RecordType
         ORDER BY b.StateCode, a.FirmName;", conn);
 
             cmd.Parameters.AddWithValue("@Portfolio", portfolio ?? "");
+            AddRecordTypeParam(cmd);
 
             conn.Open();
 
