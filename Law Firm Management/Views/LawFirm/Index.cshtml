@@ -1,8 +1,7 @@
 ﻿@model List<Law_Firm_Management.Models.LawFirmListRowVm>
 
 @{
-    var L = ViewData["Labels"] as Law_Firm_Management.Models.LawFirmRecordLabels
-            ?? Law_Firm_Management.Models.LawFirmRecordLabels.Firm;
+    var L = Law_Firm_Management.Models.LawFirmRecordLabels.From(ViewData);
     ViewData["Title"] = $"{L.Full} List";
     string sort = (ViewBag.Sort as string) ?? "FIRM_NAME";
     string dir = (ViewBag.Dir as string) ?? "ASC";

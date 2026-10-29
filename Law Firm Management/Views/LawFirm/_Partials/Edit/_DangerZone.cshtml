@@ -1,0 +1,15 @@
+@model Law_Firm_Management.Models.LawFirmEditVm
+
+<div class="card lf-card">
+    <div class="card-header">
+        <h5 class="mb-0 text-danger">Danger Zone</h5>
+    </div>
+
+    <div class="card-body">
+        <form asp-action="DeleteFirm" asp-controller="LawFirm" method="post" onsubmit="return confirm('Delete this Firm?');">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+            <button type="submit" class="btn btn-danger w-100">Delete Firm</button>
+        </form>
+    </div>
+</div>

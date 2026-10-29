@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+
 namespace Law_Firm_Management.Models
 {
     /// <summary>Allowed values of dbo.LawFirm.EntityType. Named "record type" in C# to avoid
@@ -16,5 +18,9 @@ namespace Law_Firm_Management.Models
 
         public static LawFirmRecordLabels For(string recordType) =>
             recordType == LawFirmRecordType.Agency ? Agency : Firm;
+
+        /// <summary>The labels the controller put in ViewData; Firm wording if missing.</summary>
+        public static LawFirmRecordLabels From(ViewDataDictionary viewData) =>
+            viewData["Labels"] as LawFirmRecordLabels ?? Firm;
     }
 }

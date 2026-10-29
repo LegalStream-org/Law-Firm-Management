@@ -1,0 +1,155 @@
+@model Law_Firm_Management.Models.LawFirmEditVm
+@{
+    var L = Law_Firm_Management.Models.LawFirmRecordLabels.From(ViewData);
+}
+
+<div class="card lf-card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">Documents</h5>
+        <div class="text-muted small">Contracts, NDAs, and other @(L.Short.ToLower()) documents.</div>
+    </div>
+    <div class="card-body">
+
+        <form asp-action="AddDocument" method="post" enctype="multipart/form-data" class="row g-2 mb-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+            <input type="hidden" name="returnAction" value="Edit" />
+
+            <div class="col-md-2">
+                <label class="form-label">Type</label>
+                <select name="DocumentType" class="form-select">
+                    <option value="">Select Type</option>
+                    @foreach (var t in Model.DocumentTypeOptions)
+                    {
+                        <option value="@t">@t</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Document Name</label>
+                <input name="DocumentName" class="form-control" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Choose File</label>
+                <input name="UploadFile" type="file" class="form-control" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Effective</label>
+                <input name="EffectiveDate" type="date" class="form-control" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Expiration</label>
+                <input name="ExpirationDate" type="date" class="form-control" />
+            </div>
+
+            <div class="col-md-10">
+                <label class="form-label">Notes</label>
+                <input name="Notes" class="form-control" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Active</label>
+                <div>
+                    <input type="hidden" name="IsActive" value="false" />
+                    <input type="checkbox" name="IsActive" value="true" checked />
+                </div>
+            </div>
+
+            <div class="col-12">
+                <button type="submit" class="btn btn-outline-primary">Upload Document</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Type</th>
+                        <th>Name</th>
+                        <th>File</th>
+                        <th>Effective</th>
+                        <th>Expiration</th>
+                        <th>Active</th>
+                        <th>Uploaded By</th>
+                        <th>Uploaded</th>
+                        <th style="width:320px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Documents.Any())
+                    {
+                        <tr>
+                            <td colspan="9" class="text-muted">No documents found.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var d in Model.Documents)
+                        {
+                            var replaceFormId = $"replaceDocForm_{d.LawFirmDocumentId}";
+                            <tr>
+                                <td>@d.DocumentType</td>
+                                <td>@d.DocumentName</td>
+                                <td>@d.OriginalFileName</td>
+                                <td>@(d.EffectiveDate?.ToString("MM/dd/yyyy") ?? "")</td>
+                                <td>@(d.ExpirationDate?.ToString("MM/dd/yyyy") ?? "")</td>
+                                <td>@(d.IsActive ? "Yes" : "No")</td>
+                                <td>@d.UploadedBy</td>
+                                <td>@d.UploadedDate.ToString("MM/dd/yyyy")</td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1 mb-2">
+                                        <a asp-action="DownloadDocument"
+                                           asp-route-id="@d.LawFirmDocumentId"
+                                           class="btn btn-sm btn-outline-primary">
+                                            Download
+                                        </a>
+
+                                        <form asp-action="DeleteDocument"
+                                              method="post"
+                                              class="d-inline"
+                                              onsubmit="return confirm('Delete this document?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="lawFirmDocumentId" value="@d.LawFirmDocumentId" />
+                                            <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+                                            <input type="hidden" name="returnAction" value="Edit" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                        </form>
+                                    </div>
+
+                                    <form id="@replaceFormId"
+                                          asp-action="ReplaceDocument"
+                                          method="post"
+                                          enctype="multipart/form-data"
+                                          class="row g-1">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="LawFirmDocumentId" value="@d.LawFirmDocumentId" />
+                                        <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+                                        <input type="hidden" name="returnAction" value="Edit" />
+                                        <input type="hidden" name="DocumentType" value="@d.DocumentType" />
+                                        <input type="hidden" name="DocumentName" value="@d.DocumentName" />
+                                        <input type="hidden" name="Notes" value="@d.Notes" />
+                                        <input type="hidden" name="EffectiveDate" value="@(d.EffectiveDate?.ToString("yyyy-MM-dd"))" />
+                                        <input type="hidden" name="ExpirationDate" value="@(d.ExpirationDate?.ToString("yyyy-MM-dd"))" />
+                                        <input type="hidden" name="IsActive" value="@d.IsActive" />
+
+                                        <div class="col-8">
+                                            <input name="UploadFile" type="file" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-4">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Replace</button>
+                                        </div>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>

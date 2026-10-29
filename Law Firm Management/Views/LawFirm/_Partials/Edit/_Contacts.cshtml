@@ -1,0 +1,157 @@
+@model Law_Firm_Management.Models.LawFirmEditVm
+
+<!-- Contacts -->
+<div class="card lf-card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">Contacts</h5>
+        <div class="text-muted small">IT, Accounting, day-to-day, escalation, and other contacts.</div>
+    </div>
+
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Type</th>
+                        <th>Name</th>
+                        <th>Title</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Preferred Method</th>
+                        <th>Active</th>
+                        <th>Notes</th>
+                        <th style="width:180px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Contacts.Any())
+                    {
+                        <tr>
+                            <td colspan="9" class="text-muted">No contacts found.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var c in Model.Contacts)
+                        {
+                            var formId = $"contactForm_{c.LawFirmContactId}";
+
+                            <tr>
+                                <td>
+                                    <select name="ContactType" form="@formId" class="form-select form-select-sm">
+                                        @foreach (var type in Model.ContactTypeOptions)
+                                        {
+                                            <option value="@type" selected="@(type == c.ContactType)">
+                                                @type
+                                            </option>
+                                        }
+                                    </select>
+                                </td>
+
+                                <td><input name="ContactName" form="@formId" value="@c.ContactName" class="form-control form-control-sm" /></td>
+                                <td><input name="Title" form="@formId" value="@c.Title" class="form-control form-control-sm" /></td>
+                                <td><input name="Email" form="@formId" value="@c.Email" class="form-control form-control-sm" /></td>
+                                <td><input name="Phone" form="@formId" value="@c.Phone" class="form-control form-control-sm" /></td>
+                                <td><input name="PreferredContactMethod" form="@formId" value="@c.PreferredContactMethod" class="form-control form-control-sm" /></td>
+
+                                <td class="text-center">
+                                    @if (c.IsActive)
+                                    {
+                                        <input type="checkbox" name="IsActive" value="true" form="@formId" checked="checked" />
+                                    }
+                                    else
+                                    {
+                                        <input type="checkbox" name="IsActive" value="true" form="@formId" />
+                                    }
+
+                                    <input type="hidden" name="IsActive" value="false" form="@formId" />
+                                </td>
+
+                                <td><input name="Notes" form="@formId" value="@c.Notes" class="form-control form-control-sm" /></td>
+
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <form id="@formId" asp-action="UpdateContact" asp-controller="LawFirm" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="LawFirmContactId" value="@c.LawFirmContactId" />
+                                            <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                        </form>
+
+                                        <form asp-action="DeleteContact" asp-controller="LawFirm" method="post" class="d-inline" onsubmit="return confirm('Delete this contact?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="lawFirmContactId" value="@c.LawFirmContactId" />
+                                            <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <hr />
+
+        <form asp-action="AddContact" asp-controller="LawFirm" method="post" class="row g-2">
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+
+            <div class="col-md-2">
+                <label class="form-label">Type</label>
+                <select name="ContactType" class="form-select">
+                    <option value="">Select Type</option>
+                    @foreach (var type in Model.ContactTypeOptions)
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Name</label>
+                <input name="ContactName" class="form-control" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Title</label>
+                <input name="Title" class="form-control" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Email</label>
+                <input name="Email" class="form-control" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Phone</label>
+                <input name="Phone" class="form-control" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Preferred Method</label>
+                <input name="PreferredContactMethod" class="form-control" />
+            </div>
+
+            <div class="col-md-10">
+                <label class="form-label">Notes</label>
+                <input name="Notes" class="form-control" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Active</label>
+                <div>
+                    <input type="hidden" name="IsActive" value="false" />
+                    <input type="checkbox" name="IsActive" value="true" checked />
+                </div>
+            </div>
+
+            <div class="col-12">
+                <button type="submit" class="btn btn-outline-primary">Add Contact</button>
+            </div>
+        </form>
+    </div>
+</div>

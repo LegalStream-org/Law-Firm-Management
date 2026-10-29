@@ -1,0 +1,82 @@
+@model Law_Firm_Management.Models.LawFirmEditVm
+
+<div class="card lf-card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">Accounting Mapping</h5>
+    </div>
+
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Accounting Firm</th>
+                        <th style="width:120px;">Active</th>
+                        <th style="width:180px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.AccountingMaps.Any())
+                    {
+                        <tr>
+                            <td colspan="3" class="text-muted">No accounting mappings found.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var m in Model.AccountingMaps)
+                        {
+                            var formId = $"detailsAcctMap_{m.LawFirmAccountingMapId}";
+
+                            <tr>
+                                <td>@m.AccountingFirmName</td>
+
+                                <td class="text-center">
+                                    @if (m.IsActive)
+                                    {
+                                        <input type="checkbox" name="isActive" value="true" form="@formId" checked />
+                                    }
+                                    else
+                                    {
+                                        <input type="checkbox" name="isActive" value="true" form="@formId" />
+                                    }
+
+                                    <input type="hidden" name="isActive" value="false" form="@formId" />
+                                    <input type="hidden" name="accountingFirmName" value="@m.AccountingFirmName" form="@formId" />
+                                </td>
+
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <form id="@formId"
+                                              asp-action="UpdateAccountingMap"
+                                              method="post"
+                                              class="d-inline">
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden" name="lawFirmAccountingMapId" value="@m.LawFirmAccountingMapId" />
+                                            <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                        </form>
+
+                                        <form asp-action="DeleteAccountingMap"
+                                              method="post"
+                                              class="d-inline"
+                                              onsubmit="return confirm('Delete this accounting mapping?');">
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden" name="lawFirmAccountingMapId" value="@m.LawFirmAccountingMapId" />
+                                            <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

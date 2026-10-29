@@ -1,0 +1,24 @@
+@model Law_Firm_Management.Models.LawFirmEditVm
+
+<div class="card lf-card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">Accounting Activity</h5>
+    </div>
+
+    <div class="card-body">
+        <div class="d-flex justify-content-between">
+            <span class="text-muted">Last Invoice</span>
+            <strong>@(Model.AccountingActivity.LastInvoice?.ToString("MM/dd/yyyy") ?? "None")</strong>
+        </div>
+
+        <div class="d-flex justify-content-between mt-2">
+            <span class="text-muted">Last Cost File</span>
+            <strong>@(Model.AccountingActivity.LastCostFile?.ToString("MM/dd/yyyy") ?? "None")</strong>
+        </div>
+
+        <div class="d-flex justify-content-between mt-2">
+            <span class="text-muted">Last Remit</span>
+            <strong>@(Model.AccountingActivity.LastRemit?.ToString("MM/dd/yyyy") ?? "None")</strong>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,29 @@
+@model Law_Firm_Management.Models.LawFirmEditVm
+
+<div class="card lf-card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">Summary</h5>
+    </div>
+
+    <div class="card-body">
+        <div class="d-flex justify-content-between">
+            <span class="text-muted">Status</span>
+            <strong>@Model.Status</strong>
+        </div>
+
+        <div class="d-flex justify-content-between mt-2">
+            <span class="text-muted">States</span>
+            <strong>@Model.StateMappings.Count</strong>
+        </div>
+
+        <div class="d-flex justify-content-between mt-2">
+            <span class="text-muted">Contacts</span>
+            <strong>@Model.Contacts.Count</strong>
+        </div>
+
+        <div class="d-flex justify-content-between mt-2">
+            <span class="text-muted">Notes</span>
+            <strong>@Model.Notes.Count</strong>
+        </div>
+    </div>
+</div>
