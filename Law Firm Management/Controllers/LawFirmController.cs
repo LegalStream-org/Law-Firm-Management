@@ -120,9 +120,15 @@ ORDER BY CASE WHEN EntityType = @RecordType THEN 0 ELSE 1 END, LawFirmId;", conn
         // =========================================================
         // INDEX
         // =========================================================
-        public IActionResult Index(string search, string status, string sort = "FIRM_NAME", string dir = "ASC")
+        public IActionResult Index(string search, string status, string sort = "FIRM_NAME", string dir = "ASC", bool noCoco = false)
         {
             var rows = GetLawFirms();
+
+            // Firms with no COCO number can't appear on the Exceptions dashboard; agencies aren't on it at all.
+            bool tracksCoco = RecordType == LawFirmRecordType.Firm;
+            ViewBag.NoCocoCount = tracksCoco ? rows.Count(r => r.CocoNoCount == 0) : 0;
+            if (tracksCoco && noCoco)
+                rows = rows.Where(r => r.CocoNoCount == 0).ToList();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -146,13 +152,17 @@ ORDER BY CASE WHEN EntityType = @RecordType THEN 0 ELSE 1 END, LawFirmId;", conn
             ViewBag.Status = status ?? "";
             ViewBag.Sort = sort;
             ViewBag.Dir = dir;
+            ViewBag.NoCoco = tracksCoco && noCoco;
 
             return View(rows);
         }
 
-        public IActionResult Export(string search, string status, string sort = "FIRM_NAME", string dir = "ASC")
+        public IActionResult Export(string search, string status, string sort = "FIRM_NAME", string dir = "ASC", bool noCoco = false)
         {
             var rows = GetLawFirms();
+
+            if (RecordType == LawFirmRecordType.Firm && noCoco)
+                rows = rows.Where(r => r.CocoNoCount == 0).ToList();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -579,7 +589,7 @@ WHERE LawFirmId = @LawFirmId
             using var cmd = new SqlCommand(@"
 WITH InvoiceLast AS
 (
-    SELECT 
+    SELECT
         b.LawFirmId,
         MAX(a.TranDate) AS LastInvoice
     FROM Accounting_Data.dbo.FirmInvoices a
@@ -590,7 +600,7 @@ WITH InvoiceLast AS
 ),
 RemitLast AS
 (
-    SELECT 
+    SELECT
         b.LawFirmId,
         MAX(a.TranDate) AS LastRemit
     FROM Accounting_Data.dbo.FirmRemits a
@@ -601,7 +611,7 @@ RemitLast AS
 ),
 CostLast AS
 (
-    SELECT 
+    SELECT
         b.LawFirmId,
         MAX(a.TranDate) AS LastCostFile
     FROM Accounting_Data.dbo.FirmCost a
@@ -614,6 +624,13 @@ StateCounts AS
 (
     SELECT LawFirmId, COUNT(*) AS StateCount
     FROM dbo.LawFirmStateMap
+    GROUP BY LawFirmId
+),
+CocoCounts AS
+(
+    SELECT LawFirmId, COUNT(*) AS CocoNoCount
+    FROM dbo.LawFirmStateMap
+    WHERE COCO_NO IS NOT NULL AND LTRIM(RTRIM(CAST(COCO_NO AS VARCHAR(50)))) <> ''
     GROUP BY LawFirmId
 ),
 ContactCounts AS
@@ -630,12 +647,14 @@ SELECT
     ISNULL(lf.UpdatedDate, lf.CreatedDate) AS UpdatedDate,
     ISNULL(sc.StateCount, 0) AS StateCount,
     ISNULL(cc.ContactCount, 0) AS ContactCount,
+    ISNULL(coc.CocoNoCount, 0) AS CocoNoCount,
     il.LastInvoice,
     rl.LastRemit,
     cl.LastCostFile
 FROM dbo.LawFirm lf
 LEFT JOIN StateCounts sc ON sc.LawFirmId = lf.LawFirmId
 LEFT JOIN ContactCounts cc ON cc.LawFirmId = lf.LawFirmId
+LEFT JOIN CocoCounts coc ON coc.LawFirmId = lf.LawFirmId
 LEFT JOIN InvoiceLast il ON il.LawFirmId = lf.LawFirmId
 LEFT JOIN RemitLast rl ON rl.LawFirmId = lf.LawFirmId
 LEFT JOIN CostLast cl ON cl.LawFirmId = lf.LawFirmId
@@ -658,6 +677,7 @@ ORDER BY lf.FirmName;", conn);
                     Status = rdr["Status"]?.ToString(),
                     StateCount = Convert.ToInt32(rdr["StateCount"]),
                     ContactCount = Convert.ToInt32(rdr["ContactCount"]),
+                    CocoNoCount = Convert.ToInt32(rdr["CocoNoCount"]),
                     UpdatedDate = rdr["UpdatedDate"] == DBNull.Value ? null : Convert.ToDateTime(rdr["UpdatedDate"]),
                     LastInvoice = rdr["LastInvoice"] == DBNull.Value ? null : Convert.ToDateTime(rdr["LastInvoice"]),
                     LastRemit = rdr["LastRemit"] == DBNull.Value ? null : Convert.ToDateTime(rdr["LastRemit"]),
