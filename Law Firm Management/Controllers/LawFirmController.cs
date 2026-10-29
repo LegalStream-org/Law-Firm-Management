@@ -78,9 +78,11 @@ ORDER BY CASE WHEN EntityType = @RecordType THEN 0 ELSE 1 END, LawFirmId;", conn
             if (type == null || string.Equals(type, RecordType, StringComparison.OrdinalIgnoreCase))
                 return null;
 
-            var controller = type == LawFirmRecordType.Agency ? "Agency" : "LawFirm";
-            return RedirectToAction(action, controller, new { id = lawFirmId });
+            return RedirectToAction(action, ControllerFor(type), new { id = lawFirmId });
         }
+
+        private static string ControllerFor(string recordType) =>
+            recordType == LawFirmRecordType.Agency ? "Agency" : "LawFirm";
 
         private static string DescribeType(string? recordType) =>
             string.Equals(recordType, LawFirmRecordType.Agency, StringComparison.OrdinalIgnoreCase)
@@ -526,6 +528,44 @@ WHERE LawFirmId = @LawFirmId;", conn);
 
             TempData["Message"] = $"{Labels.Full} deleted.";
             return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>Moves a record to the other list (Firm ↔ Agency); all child data stays attached.
+        /// The target comes from the record's current type, so a stale page can't move it twice.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult ChangeRecordType(int lawFirmId)
+        {
+            var current = GetRecordTypeById(lawFirmId);
+            if (current == null)
+                return NotFound();
+
+            var target = current == LawFirmRecordType.Agency ? LawFirmRecordType.Firm : LawFirmRecordType.Agency;
+
+            using (var conn = new SqlConnection(_connectionString))
+            using (var cmd = new SqlCommand(@"
+UPDATE dbo.LawFirm
+SET EntityType = @Target,
+    UpdatedBy = @UpdatedBy,
+    UpdatedDate = GETDATE()
+WHERE LawFirmId = @LawFirmId
+  AND EntityType = @Current;", conn))
+            {
+                cmd.Parameters.AddWithValue("@LawFirmId", lawFirmId);
+                cmd.Parameters.Add("@Target", SqlDbType.VarChar, 20).Value = target;
+                cmd.Parameters.Add("@Current", SqlDbType.VarChar, 20).Value = current;
+                cmd.Parameters.AddWithValue("@UpdatedBy", User?.Identity?.Name ?? "System");
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+
+            var fromLabels = LawFirmRecordLabels.For(current);
+            var toLabels = LawFirmRecordLabels.For(target);
+            AddAudit(lawFirmId, "LawFirm", lawFirmId, "Reclassify",
+                $"Moved {GetFirmNameById(lawFirmId)} from {fromLabels.FullPlural} to {toLabels.FullPlural}");
+
+            TempData["Message"] = $"Moved to {toLabels.FullPlural}.";
+            return RedirectToAction(nameof(Edit), ControllerFor(target), new { id = lawFirmId });
         }
 
         // =========================================================
