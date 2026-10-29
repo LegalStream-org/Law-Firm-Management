@@ -6,6 +6,7 @@ namespace Law_Firm_Management.Models
     {
         public int TotalLawFirms { get; set; }
         public int ActiveLawFirms { get; set; }
+        public int TotalAgencies { get; set; }
         public int TotalClients { get; set; }
         public int ActiveClients { get; set; }
 

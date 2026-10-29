@@ -114,6 +114,10 @@
                             Law Firms
                             <span class="badge bg-primary rounded-pill">@Model.TotalLawFirms</span>
                         </a>
+                        <a asp-controller="Agency" asp-action="Index" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            Agencies
+                            <span class="badge bg-primary rounded-pill">@Model.TotalAgencies</span>
+                        </a>
                         <a asp-controller="Client" asp-action="Index" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                             Clients
                             <span class="badge bg-primary rounded-pill">@Model.TotalClients</span>
