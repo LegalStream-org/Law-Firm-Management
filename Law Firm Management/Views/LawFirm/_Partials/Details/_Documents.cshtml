@@ -76,7 +76,7 @@
                         <th>Active</th>
                         <th>Uploaded By</th>
                         <th>Uploaded</th>
-                        <th style="width:320px;">Actions</th>
+                        <th style="width:1%;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -100,13 +100,38 @@
                                 <td>@(d.IsActive ? "Yes" : "No")</td>
                                 <td>@d.UploadedBy</td>
                                 <td>@d.UploadedDate.ToString("MM/dd/yyyy")</td>
-                                <td>
-                                    <div class="d-flex flex-wrap gap-1 mb-2">
+                                <td class="text-nowrap">
+                                    <div class="d-flex gap-1 align-items-start">
                                         <a asp-action="DownloadDocument"
                                            asp-route-id="@d.LawFirmDocumentId"
                                            class="btn btn-sm btn-outline-primary">
                                             Download
                                         </a>
+
+                                        @* Replace: the button opens a hidden file picker; picking a file asks to confirm, then uploads. *@
+                                        <form id="@replaceFormId"
+                                              asp-action="ReplaceDocument"
+                                              method="post"
+                                              enctype="multipart/form-data"
+                                              class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="LawFirmDocumentId" value="@d.LawFirmDocumentId" />
+                                            <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+                                            <input type="hidden" name="returnAction" value="Edit" />
+                                            <input type="hidden" name="DocumentType" value="@d.DocumentType" />
+                                            <input type="hidden" name="DocumentName" value="@d.DocumentName" />
+                                            <input type="hidden" name="Notes" value="@d.Notes" />
+                                            <input type="hidden" name="EffectiveDate" value="@(d.EffectiveDate?.ToString("yyyy-MM-dd"))" />
+                                            <input type="hidden" name="ExpirationDate" value="@(d.ExpirationDate?.ToString("yyyy-MM-dd"))" />
+                                            <input type="hidden" name="IsActive" value="@d.IsActive" />
+
+                                            <input id="@(replaceFormId)_file" name="UploadFile" type="file" class="d-none"
+                                                   onchange="if (this.files.length && confirm('Replace this document with ' + this.files[0].name + '?')) { this.form.submit(); } else { this.value = ''; }" />
+                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    onclick="document.getElementById('@(replaceFormId)_file').click();">
+                                                Replace
+                                            </button>
+                                        </form>
 
                                         <form asp-action="DeleteDocument"
                                               method="post"
@@ -119,30 +144,6 @@
                                             <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                                         </form>
                                     </div>
-
-                                    <form id="@replaceFormId"
-                                          asp-action="ReplaceDocument"
-                                          method="post"
-                                          enctype="multipart/form-data"
-                                          class="row g-1">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="LawFirmDocumentId" value="@d.LawFirmDocumentId" />
-                                        <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
-                                        <input type="hidden" name="returnAction" value="Edit" />
-                                        <input type="hidden" name="DocumentType" value="@d.DocumentType" />
-                                        <input type="hidden" name="DocumentName" value="@d.DocumentName" />
-                                        <input type="hidden" name="Notes" value="@d.Notes" />
-                                        <input type="hidden" name="EffectiveDate" value="@(d.EffectiveDate?.ToString("yyyy-MM-dd"))" />
-                                        <input type="hidden" name="ExpirationDate" value="@(d.ExpirationDate?.ToString("yyyy-MM-dd"))" />
-                                        <input type="hidden" name="IsActive" value="@d.IsActive" />
-
-                                        <div class="col-8">
-                                            <input name="UploadFile" type="file" class="form-control form-control-sm" />
-                                        </div>
-                                        <div class="col-4">
-                                            <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Replace</button>
-                                        </div>
-                                    </form>
                                 </td>
                             </tr>
                         }

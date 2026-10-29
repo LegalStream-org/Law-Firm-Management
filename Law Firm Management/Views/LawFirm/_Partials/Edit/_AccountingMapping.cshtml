@@ -74,12 +74,12 @@
 
         <hr />
 
-        <form asp-action="AddAccountingMap" method="post" class="row g-2">
+        <form asp-action="AddAccountingMap" method="post" class="row g-2 align-items-center">
             @Html.AntiForgeryToken()
 
             <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
 
-            <div class="col-md-6">
+            <div class="col">
                 <select name="AccountingFirmName" class="form-select">
                     <option value="">Select Firm</option>
                     @foreach (var f in Model.AccountingFirmOptions)
@@ -89,10 +89,16 @@
                 </select>
             </div>
 
-            <input type="checkbox" name="isActive" value="true" checked />
-            <input type="hidden" name="isActive" value="false" />
+            @* Checkbox needs its own column: a bare child of .row is forced full width onto its own line. *@
+            <div class="col-auto">
+                <div class="form-check mb-0">
+                    <input type="checkbox" name="isActive" value="true" class="form-check-input" id="newAcctMapActive" checked />
+                    <input type="hidden" name="isActive" value="false" />
+                    <label class="form-check-label" for="newAcctMapActive">Active</label>
+                </div>
+            </div>
 
-            <div class="col-md-2">
+            <div class="col-auto">
                 <button class="btn btn-success">Add</button>
             </div>
         </form>
