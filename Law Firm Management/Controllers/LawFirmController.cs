@@ -2,6 +2,7 @@
 using DocumentFormat.OpenXml.InkML;
 using Law_Firm_Management.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Data.SqlClient;
 using Microsoft.VisualBasic.FileIO;
 using System.Data;
@@ -22,6 +23,16 @@ namespace Law_Firm_Management.Controllers
 
         /// <summary>Which LawFirm rows this controller manages (EntityType). AgencyController overrides it.</summary>
         protected virtual string RecordType => LawFirmRecordType.Firm;
+
+        /// <summary>Wording for this type ("Law Firm" / "Agency"), also passed to every view as ViewData["Labels"].</summary>
+        protected LawFirmRecordLabels Labels => LawFirmRecordLabels.For(RecordType);
+
+        [NonAction]
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            ViewData["Labels"] = Labels;
+            base.OnActionExecuting(context);
+        }
 
         /// <summary>VarChar(20) to match the column, so the EntityType index can be used.</summary>
         private void AddRecordTypeParam(SqlCommand cmd) =>
@@ -190,9 +201,9 @@ ORDER BY UploadedDate DESC, LawFirmDocumentId DESC;", conn);
             rows = SortRows(rows, sort, dir);
 
             using var wb = new XLWorkbook();
-            var ws = wb.Worksheets.Add("Law Firms");
+            var ws = wb.Worksheets.Add(Labels.FullPlural);
 
-            ws.Cell(1, 1).Value = "Firm Name";
+            ws.Cell(1, 1).Value = $"{Labels.Short} Name";
             ws.Cell(1, 2).Value = "Short Name";
             ws.Cell(1, 3).Value = "Status";
             ws.Cell(1, 4).Value = "State Count";
@@ -221,7 +232,7 @@ ORDER BY UploadedDate DESC, LawFirmDocumentId DESC;", conn);
             return File(
                 stream.ToArray(),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                $"LawFirmList_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
+                $"{Labels.FullPlural.Replace(" ", "")}List_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
         }
 
         // =========================================================
@@ -949,7 +960,7 @@ WHERE LawFirmNoteId = @LawFirmNoteId;", conn);
             using var cmd = new SqlCommand(@"
 WITH InvoiceLast AS
 (
-    SELECT
+    SELECT 
         b.LawFirmId,
         MAX(a.TranDate) AS LastInvoice
     FROM Accounting_Data.dbo.FirmInvoices a
@@ -960,7 +971,7 @@ WITH InvoiceLast AS
 ),
 RemitLast AS
 (
-    SELECT
+    SELECT 
         b.LawFirmId,
         MAX(a.TranDate) AS LastRemit
     FROM Accounting_Data.dbo.FirmRemits a
@@ -971,7 +982,7 @@ RemitLast AS
 ),
 CostLast AS
 (
-    SELECT
+    SELECT 
         b.LawFirmId,
         MAX(a.TranDate) AS LastCostFile
     FROM Accounting_Data.dbo.FirmCost a
@@ -1858,7 +1869,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);", conn);
             return File(bytes, "text/csv", "LawFirmImportTemplate.csv");
         }
 
-
+    
 
     [HttpGet]
         public IActionResult ImportContacts()
@@ -2297,7 +2308,7 @@ VALUES
             // LOAD REPORT DATA
             // =========================
             using (var cmd = new SqlCommand(@"
-        SELECT
+        SELECT 
             b.StateCode,
             a.FirmName,
             b.Portfolio,
@@ -2306,7 +2317,7 @@ VALUES
             b.SftpFolderPath,
             b.PlacementPercent
         FROM dbo.LawFirm a
-        INNER JOIN dbo.LawFirmStateMap b
+        INNER JOIN dbo.LawFirmStateMap b 
             ON b.LawFirmId = a.LawFirmId
         WHERE (@Portfolio = '' OR b.Portfolio = @Portfolio) and b.IsActive = 1
           AND a.EntityType = @RecordType
@@ -2344,7 +2355,7 @@ VALUES
 
             using var conn = new SqlConnection(_connectionString);
             using var cmd = new SqlCommand(@"
-        SELECT
+        SELECT 
             b.StateCode,
             a.FirmName,
             b.Portfolio,
@@ -2353,7 +2364,7 @@ VALUES
             b.SftpFolderPath,
             b.PlacementPercent
         FROM dbo.LawFirm a
-        INNER JOIN dbo.LawFirmStateMap b
+        INNER JOIN dbo.LawFirmStateMap b 
             ON b.LawFirmId = a.LawFirmId
         WHERE (@Portfolio = '' OR b.Portfolio = @Portfolio) and b.IsActive = 1
           AND a.EntityType = @RecordType

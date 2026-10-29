@@ -1,7 +1,9 @@
 ﻿@model List<Law_Firm_Management.Models.LawFirmListRowVm>
 
 @{
-    ViewData["Title"] = "Law Firm List";
+    var L = ViewData["Labels"] as Law_Firm_Management.Models.LawFirmRecordLabels
+            ?? Law_Firm_Management.Models.LawFirmRecordLabels.Firm;
+    ViewData["Title"] = $"{L.Full} List";
     string sort = (ViewBag.Sort as string) ?? "FIRM_NAME";
     string dir = (ViewBag.Dir as string) ?? "ASC";
     string search = (ViewBag.Search as string) ?? "";
@@ -15,8 +17,8 @@
 }
 
 <div class="mb-3 d-flex gap-2">
-    <a class="btn btn-primary" asp-action="Create">Add New Firm</a>
-    <a class="btn btn-outline-secondary" asp-action="Import">Import Firms</a>
+    <a class="btn btn-primary" asp-action="Create">Add New @L.Short</a>
+    <a class="btn btn-outline-secondary" asp-action="Import">Import @L.ShortPlural</a>
     <a class="btn btn-outline-secondary" asp-action="Export"
        asp-route-search="@search"
        asp-route-status="@status"
@@ -38,7 +40,7 @@
 
 <form method="get" class="row g-2 mb-3">
     <div class="col-md-4">
-        <input type="text" name="search" value="@search" class="form-control" placeholder="Search firm..." />
+        <input type="text" name="search" value="@search" class="form-control" placeholder="Search @(L.Short.ToLower())..." />
     </div>
     <div class="col-md-3">
         <select name="status" class="form-select">
@@ -64,7 +66,7 @@
                    asp-route-dir="@ToggleDir("FIRM_NAME")"
                    asp-route-search="@search"
                    asp-route-status="@status">
-                    Firm
+                    @L.Short
                 </a>
             </th>
             <th>
@@ -148,7 +150,7 @@
         @if (Model == null || !Model.Any())
         {
             <tr>
-                <td colspan="7" class="text-center">No law firms found.</td>
+                <td colspan="10" class="text-center">No @L.FullPlural.ToLower() found.</td>
             </tr>
         }
         else

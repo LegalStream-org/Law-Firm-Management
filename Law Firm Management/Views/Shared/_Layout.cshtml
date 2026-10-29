@@ -460,6 +460,31 @@
                 </div>
             </div>
 
+            <div class="side-dropdown @(currentController == "Agency" ? "open" : "")">
+                <button type="button"
+                        class="side-dropdown-toggle @(currentController == "Agency" ? "active" : "")">
+                    <span class="nav-icon">🤝</span>
+                    <span class="nav-text">Agencies</span>
+                    <span class="side-caret">›</span>
+                </button>
+
+                <div class="side-submenu">
+                    <a class="side-link @(currentController == "Agency" && currentAction == "Index" ? "active" : "")"
+                       asp-controller="Agency"
+                       asp-action="Index">
+                        <span class="nav-icon">📋</span>
+                        <span class="nav-text">Agency List</span>
+                    </a>
+
+                    <a class="side-link"
+                       asp-controller="Agency"
+                       asp-action="Export">
+                        <span class="nav-icon">📤</span>
+                        <span class="nav-text">Export Agency List</span>
+                    </a>
+                </div>
+            </div>
+
             <div class="side-dropdown @(currentController == "Client" ? "open" : "")">
                 <button type="button"
                         class="side-dropdown-toggle @(currentController == "Client" ? "active" : "")">
