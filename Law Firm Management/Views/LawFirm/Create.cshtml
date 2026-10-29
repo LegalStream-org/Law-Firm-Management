@@ -8,14 +8,17 @@
 <h2>Add @L.Full</h2>
 
 <form asp-action="Create" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
     <div class="row g-3">
         <div class="col-md-6">
-            <label class="form-label">@L.Short Name</label>
+            <label class="form-label">@L.Short Name <span class="text-danger">*</span></label>
             <input asp-for="FirmName" class="form-control" />
+            <span asp-validation-for="FirmName" class="text-danger"></span>
         </div>
         <div class="col-md-3">
-            <label class="form-label">Short Name</label>
+            <label class="form-label">Short Name <span class="text-danger">*</span></label>
             <input asp-for="ShortName" class="form-control" />
+            <span asp-validation-for="ShortName" class="text-danger"></span>
         </div>
         <div class="col-md-3">
             <label class="form-label">Status</label>
@@ -26,12 +29,14 @@
         </div>
 
         <div class="col-md-4">
-            <label class="form-label">Phone</label>
+            <label class="form-label">Phone <span class="text-danger">*</span></label>
             <input asp-for="MainPhone" class="form-control" />
+            <span asp-validation-for="MainPhone" class="text-danger"></span>
         </div>
         <div class="col-md-4">
-            <label class="form-label">Email</label>
+            <label class="form-label">Email <span class="text-danger">*</span></label>
             <input asp-for="MainEmail" class="form-control" />
+            <span asp-validation-for="MainEmail" class="text-danger"></span>
         </div>
         <div class="col-md-4">
             <label class="form-label">Website</label>
@@ -39,8 +44,9 @@
         </div>
 
         <div class="col-md-6">
-            <label class="form-label">Address 1</label>
+            <label class="form-label">Address 1 <span class="text-danger">*</span></label>
             <input asp-for="Address1" class="form-control" />
+            <span asp-validation-for="Address1" class="text-danger"></span>
         </div>
         <div class="col-md-6">
             <label class="form-label">Address 2</label>
@@ -48,16 +54,19 @@
         </div>
 
         <div class="col-md-4">
-            <label class="form-label">City</label>
+            <label class="form-label">City <span class="text-danger">*</span></label>
             <input asp-for="City" class="form-control" />
+            <span asp-validation-for="City" class="text-danger"></span>
         </div>
         <div class="col-md-4">
-            <label class="form-label">State</label>
+            <label class="form-label">State <span class="text-danger">*</span></label>
             <input asp-for="State" class="form-control" />
+            <span asp-validation-for="State" class="text-danger"></span>
         </div>
         <div class="col-md-4">
-            <label class="form-label">Zip</label>
+            <label class="form-label">Zip <span class="text-danger">*</span></label>
             <input asp-for="Zip" class="form-control" />
+            <span asp-validation-for="Zip" class="text-danger"></span>
         </div>
         <div class="col-md-4">
             <label class="form-label">EIN</label>
