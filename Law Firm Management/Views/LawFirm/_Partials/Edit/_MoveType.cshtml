@@ -1,0 +1,28 @@
+@model Law_Firm_Management.Models.LawFirmEditVm
+@{
+    var L = Law_Firm_Management.Models.LawFirmRecordLabels.From(ViewData);
+    var target = L == Law_Firm_Management.Models.LawFirmRecordLabels.Agency
+        ? Law_Firm_Management.Models.LawFirmRecordLabels.Firm
+        : Law_Firm_Management.Models.LawFirmRecordLabels.Agency;
+}
+
+<div class="card lf-card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">Record Type</h5>
+        <div class="text-muted small">Currently listed under @L.FullPlural.</div>
+    </div>
+
+    <div class="card-body">
+        <p class="small text-muted mb-3">
+            Contacts, state mappings, documents, notes, accounting mappings and history move with it.
+        </p>
+
+        @* No firm name in the confirm text: an apostrophe in a name would break the JavaScript string. *@
+        <form asp-action="ChangeRecordType" method="post"
+              onsubmit="return confirm('Move this @(L.Full.ToLower()) to @(target.FullPlural)?');">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+            <button type="submit" class="btn btn-outline-secondary w-100">Move to @target.FullPlural</button>
+        </form>
+    </div>
+</div>

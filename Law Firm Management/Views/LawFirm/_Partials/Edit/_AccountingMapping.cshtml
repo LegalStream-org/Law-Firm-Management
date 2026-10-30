@@ -1,0 +1,107 @@
+@model Law_Firm_Management.Models.LawFirmEditVm
+
+<div class="card lf-card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">Accounting Mapping</h5>
+    </div>
+
+    <div class="card-body">
+
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Accounting Firm</th>
+                    <th>Active</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in Model.AccountingMaps)
+                {
+                    var formId = $"acctMap_{m.LawFirmAccountingMapId}";
+
+                    <tr>
+                        <td>
+                            <select name="AccountingFirmName" form="@formId" class="form-select">
+                                @foreach (var f in Model.AccountingFirmOptions)
+                                {
+                                    <option value="@f" selected="@(f == m.AccountingFirmName)">
+                                        @f
+                                    </option>
+                                }
+                            </select>
+                        </td>
+
+                        <td class="text-center">
+                            @if (m.IsActive)
+                            {
+                                <input type="checkbox" name="IsActive" value="true" form="@formId" checked="checked" />
+                            }
+                            else
+                            {
+                                <input type="checkbox" name="IsActive" value="true" form="@formId" />
+                            }
+
+                            <input type="hidden" name="IsActive" value="false" form="@formId" />
+                        </td>
+
+                        <td>
+                            <div class="d-flex gap-1">
+                                <form id="@formId" asp-action="UpdateAccountingMap" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+
+                                    <input type="hidden" name="lawFirmAccountingMapId" value="@m.LawFirmAccountingMapId" />
+                                    <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                </form>
+
+                                <form asp-action="DeleteAccountingMap" method="post" class="d-inline"
+                                      onsubmit="return confirm('Delete this accounting mapping?');">
+                                    @Html.AntiForgeryToken()
+
+                                    <input type="hidden" name="lawFirmAccountingMapId" value="@m.LawFirmAccountingMapId" />
+                                    <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <hr />
+
+        <form asp-action="AddAccountingMap" method="post" class="row g-2 align-items-center">
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+
+            <div class="col">
+                <select name="AccountingFirmName" class="form-select">
+                    <option value="">Select Firm</option>
+                    @foreach (var f in Model.AccountingFirmOptions)
+                    {
+                        <option value="@f">@f</option>
+                    }
+                </select>
+            </div>
+
+            @* Checkbox needs its own column: a bare child of .row is forced full width onto its own line. *@
+            <div class="col-auto">
+                <div class="form-check mb-0">
+                    <input type="checkbox" name="isActive" value="true" class="form-check-input" id="newAcctMapActive" checked />
+                    <input type="hidden" name="isActive" value="false" />
+                    <label class="form-check-label" for="newAcctMapActive">Active</label>
+                </div>
+            </div>
+
+            <div class="col-auto">
+                <button class="btn btn-success">Add</button>
+            </div>
+        </form>
+
+    </div>
+</div>

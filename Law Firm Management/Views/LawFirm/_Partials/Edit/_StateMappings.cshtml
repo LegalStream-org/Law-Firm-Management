@@ -1,0 +1,187 @@
+@model Law_Firm_Management.Models.LawFirmEditVm
+
+<!-- State Mapping -->
+<div class="card lf-card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">State Mapping</h5>
+        <div class="text-muted small">State routing, COCO, export ID, placement %, and SFTP folder.</div>
+    </div>
+
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>State</th>
+                        <th>COCO_NO</th>
+                        <th>Export ID</th>
+                        <th>Placement %</th>
+                        <th>Portfolio</th>
+                        <th>SFTP Folder</th>
+                        <th>Active</th>
+                        <th>Notes</th>
+                        <th style="width:180px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.StateMappings.Any())
+                    {
+                        <tr>
+                            <td colspan="9" class="text-muted">No state mappings found.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var s in Model.StateMappings)
+                        {
+                            var formId = $"stateForm_{s.LawFirmStateMapId}";
+
+                            <tr>
+                                <td>
+                                    <select name="StateCode" form="@formId" class="form-select form-select-sm">
+                                        @foreach (var state in Model.StateCodeOptions)
+                                        {
+                                            <option value="@state" selected="@(state == s.StateCode)">
+                                                @state
+                                            </option>
+                                        }
+                                    </select>
+                                </td>
+
+                                <td>
+                                    <input name="COCO_NO" form="@formId" value="@s.COCO_NO" class="form-control form-control-sm" />
+                                </td>
+
+                                <td>
+                                    <input name="ExportId" form="@formId" value="@s.ExportId" class="form-control form-control-sm" />
+                                </td>
+
+                                <td>
+                                    <input name="PlacementPercent" form="@formId" value="@s.PlacementPercent" class="form-control form-control-sm" />
+                                </td>
+
+                                <td>
+                                    <select name="Portfolio" form="@formId" class="form-select form-select-sm">
+                                        <option value="">--</option>
+                                        @foreach (var p in Model.PortfolioOptions)
+                                        {
+                                            <option value="@p" selected="@(p == s.Portfolio)">
+                                                @p
+                                            </option>
+                                        }
+                                    </select>
+                                </td>
+
+                                <td>
+                                    <input name="SftpFolderPath" form="@formId" value="@s.SftpFolderPath" class="form-control form-control-sm" />
+                                </td>
+
+                                <td class="text-center">
+                                    @if (s.IsActive)
+                                    {
+                                        <input type="checkbox" name="IsActive" value="true" form="@formId" checked="checked" />
+                                    }
+                                    else
+                                    {
+                                        <input type="checkbox" name="IsActive" value="true" form="@formId" />
+                                    }
+
+                                    <input type="hidden" name="IsActive" value="false" form="@formId" />
+                                </td>
+
+                                <td>
+                                    <input name="Notes" form="@formId" value="@s.Notes" class="form-control form-control-sm" />
+                                </td>
+
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <form id="@formId" asp-action="UpdateStateMap" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="LawFirmStateMapId" value="@s.LawFirmStateMapId" />
+                                            <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                        </form>
+
+                                        <form asp-action="DeleteStateMap" method="post" class="d-inline" onsubmit="return confirm('Delete this state mapping?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="lawFirmStateMapId" value="@s.LawFirmStateMapId" />
+                                            <input type="hidden" name="lawFirmId" value="@Model.LawFirmId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <hr />
+
+        <form asp-action="AddStateMap" method="post" class="row g-2">
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+
+            <div class="col-md-2">
+                <label class="form-label">State</label>
+                <select name="StateCode" class="form-select">
+                    <option value="">Select State</option>
+                    @foreach (var state in Model.StateCodeOptions)
+                    {
+                        <option value="@state">@state</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Portfolio</label>
+                <select name="Portfolio" class="form-select">
+                    <option value="">Select</option>
+                    @foreach (var p in Model.PortfolioOptions)
+                    {
+                        <option value="@p">@p</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">COCO_NO</label>
+                <input name="COCO_NO" class="form-control" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Export ID</label>
+                <input name="ExportId" class="form-control" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Placement %</label>
+                <input name="PlacementPercent" class="form-control" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">SFTP Folder</label>
+                <input name="SftpFolderPath" class="form-control" />
+            </div>
+
+            <div class="col-md-1">
+                <label class="form-label">Active</label>
+                <div>
+                    <input type="hidden" name="IsActive" value="false" />
+                    <input type="checkbox" name="IsActive" value="true" checked />
+                </div>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">Notes</label>
+                <input name="Notes" class="form-control" />
+            </div>
+
+            <div class="col-12">
+                <button type="submit" class="btn btn-outline-primary">Add State Map</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,45 @@
+@model Law_Firm_Management.Models.LawFirmEditVm
+
+<div class="card shadow-sm mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">State Mapping</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>State</th>
+                        <th>COCO_NO</th>
+                        <th>Export ID</th>
+                        <th>Placement %</th>
+                        <th>Portfolio</th>
+                        <th>SFTP Folder</th>                                   
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.StateMappings.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-muted">No state mappings found.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var s in Model.StateMappings)
+                        {
+                            <tr>
+                                <td>@s.StateCode</td>
+                                <td>@s.COCO_NO</td>
+                                <td>@s.ExportId</td>
+                                <td>@(s.PlacementPercent?.ToString("0.##") ?? "")</td>
+                                <td>@s.Portfolio</td>
+                                <td>@s.SftpFolderPath</td>                                            
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

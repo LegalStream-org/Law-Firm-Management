@@ -1,0 +1,33 @@
+@model Law_Firm_Management.Models.LawFirmEditVm
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0">Recent Audit</h5>
+    </div>
+    <div class="card-body">
+        @if (!Model.AuditHistory.Any())
+        {
+            <div class="text-muted">No audit history found.</div>
+        }
+        else
+        {
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model.AuditHistory.Take(10))
+                    {
+                        <tr>
+                            <td>@a.ChangedDate.ToString("MM/dd/yyyy HH:mm")</td>
+                            <td>@a.ChangeSummary</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

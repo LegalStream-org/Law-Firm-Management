@@ -1,0 +1,70 @@
+@model Law_Firm_Management.Models.LawFirmEditVm
+
+<div class="card shadow-sm mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">Notes</h5>
+    </div>
+    <div class="card-body">
+
+        <form asp-action="AddNote" method="post" class="mb-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="LawFirmId" value="@Model.LawFirmId" />
+            <input type="hidden" name="returnAction" value="Details" />
+
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <label class="form-label">Note Type</label>
+                    <select name="NoteType" class="form-select form-select-sm">
+                        @foreach (var Type in Model.NoteOptions)
+                        {
+                            <option value=@Type>@Type</option>
+                        }                                 
+                    </select>
+                    @* <input name="NoteType" class="form-control" placeholder="General / IT / Billing / Ops" /> *@
+                </div>
+                <div class="col-md-9">
+                    <label class="form-label">Add Note</label>
+                    <textarea name="NoteText" class="form-control" rows="3" placeholder="Enter note"></textarea>
+                </div>
+            </div>
+
+            <div class="mt-2 text-end">
+                <button type="submit" class="btn btn-outline-primary">Add Note</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:160px;">Date</th>
+                        <th style="width:140px;">Type</th>
+                        <th style="width:160px;">Entered By</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Notes.Any())
+                    {
+                        <tr>
+                            <td colspan="4" class="text-muted">No notes found.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var n in Model.Notes)
+                        {
+                            <tr>
+                                <td>@n.EnteredDate.ToString("MM/dd/yyyy HH:mm")</td>
+                                <td>@n.NoteType</td>
+                                <td>@n.EnteredBy</td>
+                                <td>@n.NoteText</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>

@@ -21,11 +21,14 @@ namespace Law_Firm_Management.Controllers
             using var conn = new SqlConnection(_connectionString);
             conn.Open();
 
-            using (var cmd = new SqlCommand("SELECT COUNT(*) FROM dbo.LawFirm;", conn))
+            using (var cmd = new SqlCommand("SELECT COUNT(*) FROM dbo.LawFirm WHERE EntityType = 'Firm';", conn))
                 vm.TotalLawFirms = Convert.ToInt32(cmd.ExecuteScalar());
 
-            using (var cmd = new SqlCommand("SELECT COUNT(*) FROM dbo.LawFirm WHERE Status = 'Active';", conn))
+            using (var cmd = new SqlCommand("SELECT COUNT(*) FROM dbo.LawFirm WHERE EntityType = 'Firm' AND Status = 'Active';", conn))
                 vm.ActiveLawFirms = Convert.ToInt32(cmd.ExecuteScalar());
+
+            using (var cmd = new SqlCommand("SELECT COUNT(*) FROM dbo.LawFirm WHERE EntityType = 'Agency';", conn))
+                vm.TotalAgencies = Convert.ToInt32(cmd.ExecuteScalar());
 
             using (var cmd = new SqlCommand("SELECT COUNT(*) FROM dbo.Client;", conn))
                 vm.TotalClients = Convert.ToInt32(cmd.ExecuteScalar());
@@ -43,6 +46,7 @@ SELECT TOP 5
     0 AS ContactCount,
     ISNULL(UpdatedDate, CreatedDate) AS UpdatedDate
 FROM dbo.LawFirm
+WHERE EntityType = 'Firm'
 ORDER BY ISNULL(UpdatedDate, CreatedDate) DESC;", conn))
             using (var rdr = cmd.ExecuteReader())
             {

@@ -1,11 +1,18 @@
 ﻿@model List<Law_Firm_Management.Models.LawFirmListRowVm>
 
 @{
-    ViewData["Title"] = "Law Firm List";
+    var L = Law_Firm_Management.Models.LawFirmRecordLabels.From(ViewData);
+    ViewData["Title"] = $"{L.Full} List";
     string sort = (ViewBag.Sort as string) ?? "FIRM_NAME";
     string dir = (ViewBag.Dir as string) ?? "ASC";
     string search = (ViewBag.Search as string) ?? "";
     string status = (ViewBag.Status as string) ?? "";
+
+    // "No COCO #": firms only - a firm with no COCO number can't appear on the Exceptions dashboard.
+    bool tracksCoco = L == Law_Firm_Management.Models.LawFirmRecordLabels.Firm;
+    bool noCoco = ViewData["NoCoco"] is true;
+    int noCocoCount = ViewData["NoCocoCount"] is int c ? c : 0;
+    string? noCocoRoute = noCoco ? "true" : null;   // null drops it from links
 
     string ToggleDir(string col)
     {
@@ -15,13 +22,14 @@
 }
 
 <div class="mb-3 d-flex gap-2">
-    <a class="btn btn-primary" asp-action="Create">Add New Firm</a>
-    <a class="btn btn-outline-secondary" asp-action="Import">Import Firms</a>
+    <a class="btn btn-primary" asp-action="Create">Add New @L.Short</a>
+    <a class="btn btn-outline-secondary" asp-action="Import">Import @L.ShortPlural</a>
     <a class="btn btn-outline-secondary" asp-action="Export"
        asp-route-search="@search"
        asp-route-status="@status"
        asp-route-sort="@sort"
-       asp-route-dir="@dir">
+       asp-route-dir="@dir"
+       asp-route-noCoco="@noCocoRoute">
         Export
     </a>
 </div>
@@ -36,9 +44,27 @@
     <div class="alert alert-danger">@Html.Raw(TempData["Error"])</div>
 }
 
-<form method="get" class="row g-2 mb-3">
-    <div class="col-md-4">
-        <input type="text" name="search" value="@search" class="form-control" placeholder="Search firm..." />
+@if (tracksCoco && noCocoCount > 0)
+{
+    <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2 py-2">
+        <span>
+            <strong>@noCocoCount</strong> @(noCocoCount == 1 ? "firm has" : "firms have") no COCO number in their state mappings,
+            so @(noCocoCount == 1 ? "it doesn't" : "they don't") appear on the Exceptions dashboard.
+        </span>
+        @if (noCoco)
+        {
+            <a asp-action="Index" class="btn btn-sm btn-outline-dark">Show all firms</a>
+        }
+        else
+        {
+            <a asp-action="Index" asp-route-noCoco="true" class="btn btn-sm btn-outline-dark">Show them</a>
+        }
+    </div>
+}
+
+<form method="get" class="row g-2 mb-3 align-items-center">
+    <div class="@(tracksCoco ? "col-md-3" : "col-md-4")">
+        <input type="text" name="search" value="@search" class="form-control" placeholder="Search @(L.Short.ToLower())..." />
     </div>
     <div class="col-md-3">
         <select name="status" class="form-select">
@@ -47,6 +73,15 @@
             <option value="Inactive" selected="@(status == "Inactive")">Inactive</option>
         </select>
     </div>
+    @if (tracksCoco)
+    {
+        <div class="col-md-2">
+            <div class="form-check mb-0">
+                <input type="checkbox" name="noCoco" value="true" class="form-check-input" id="noCocoFilter" checked="@noCoco" />
+                <label class="form-check-label" for="noCocoFilter">No COCO # only</label>
+            </div>
+        </div>
+    }
     <div class="col-md-2">
         <button type="submit" class="btn btn-secondary w-100">Search</button>
     </div>
@@ -63,8 +98,9 @@
                    asp-route-sort="FIRM_NAME"
                    asp-route-dir="@ToggleDir("FIRM_NAME")"
                    asp-route-search="@search"
-                   asp-route-status="@status">
-                    Firm
+                   asp-route-status="@status"
+                   asp-route-noCoco="@noCocoRoute">
+                    @L.Short
                 </a>
             </th>
             <th>
@@ -72,7 +108,8 @@
                    asp-route-sort="SHORT_NAME"
                    asp-route-dir="@ToggleDir("SHORT_NAME")"
                    asp-route-search="@search"
-                   asp-route-status="@status">
+                   asp-route-status="@status"
+                   asp-route-noCoco="@noCocoRoute">
                     Short Name
                 </a>
             </th>
@@ -81,7 +118,8 @@
                    asp-route-sort="STATUS"
                    asp-route-dir="@ToggleDir("STATUS")"
                    asp-route-search="@search"
-                   asp-route-status="@status">
+                   asp-route-status="@status"
+                   asp-route-noCoco="@noCocoRoute">
                     Status
                 </a>
             </th>
@@ -90,7 +128,8 @@
                    asp-route-sort="STATE_COUNT"
                    asp-route-dir="@ToggleDir("STATE_COUNT")"
                    asp-route-search="@search"
-                   asp-route-status="@status">
+                   asp-route-status="@status"
+                   asp-route-noCoco="@noCocoRoute">
                     States
                 </a>
             </th>
@@ -99,7 +138,8 @@
                    asp-route-sort="CONTACT_COUNT"
                    asp-route-dir="@ToggleDir("CONTACT_COUNT")"
                    asp-route-search="@search"
-                   asp-route-status="@status">
+                   asp-route-status="@status"
+                   asp-route-noCoco="@noCocoRoute">
                     Contacts
                 </a>
             </th>
@@ -108,7 +148,8 @@
                    asp-route-sort="UPDATED_DATE"
                    asp-route-dir="@ToggleDir("UPDATED_DATE")"
                    asp-route-search="@search"
-                   asp-route-status="@status">
+                   asp-route-status="@status"
+                   asp-route-noCoco="@noCocoRoute">
                     Last Updated
                 </a>
             </th>
@@ -117,7 +158,8 @@
                    asp-route-sort="LAST_INVOICE"
                    asp-route-dir="@ToggleDir("LAST_INVOICE")"
                    asp-route-search="@search"
-                   asp-route-status="@status">
+                   asp-route-status="@status"
+                   asp-route-noCoco="@noCocoRoute">
                     Last Invoice
                 </a>
             </th>
@@ -127,7 +169,8 @@
                    asp-route-sort="LAST_REMIT"
                    asp-route-dir="@ToggleDir("LAST_REMIT")"
                    asp-route-search="@search"
-                   asp-route-status="@status">
+                   asp-route-status="@status"
+                   asp-route-noCoco="@noCocoRoute">
                     Last Remit
                 </a>
             </th>
@@ -137,7 +180,8 @@
                    asp-route-sort="LAST_COST"
                    asp-route-dir="@ToggleDir("LAST_COST")"
                    asp-route-search="@search"
-                   asp-route-status="@status">
+                   asp-route-status="@status"
+                   asp-route-noCoco="@noCocoRoute">
                     Last Cost
                 </a>
             </th>
@@ -148,7 +192,7 @@
         @if (Model == null || !Model.Any())
         {
             <tr>
-                <td colspan="7" class="text-center">No law firms found.</td>
+                <td colspan="10" class="text-center">No @L.FullPlural.ToLower() found.</td>
             </tr>
         }
         else
@@ -156,7 +200,14 @@
             @foreach (var r in Model)
             {
                 <tr>
-                    <td>@r.FirmName</td>
+                    <td>
+                        @r.FirmName
+                        @if (tracksCoco && r.CocoNoCount == 0)
+                        {
+                            <span class="badge bg-warning text-dark ms-1"
+                                  title="No COCO number in state mappings, so this firm won't appear on the Exceptions dashboard">No COCO #</span>
+                        }
+                    </td>
                     <td>@r.ShortName</td>
                     <td>@r.Status</td>
                     <td>@r.StateCount</td>

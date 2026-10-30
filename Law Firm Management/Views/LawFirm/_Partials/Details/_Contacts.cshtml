@@ -1,0 +1,45 @@
+@model Law_Firm_Management.Models.LawFirmEditVm
+
+<div class="card shadow-sm mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">Contacts</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Name</th>
+                        <th>Title</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Preferred Method</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Contacts.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-muted">No contacts found.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var c in Model.Contacts)
+                        {
+                            <tr>
+                                <td>@c.ContactType</td>
+                                <td>@c.ContactName</td>
+                                <td>@c.Title</td>
+                                <td>@c.Email</td>
+                                <td>@c.Phone</td>
+                                <td>@c.PreferredContactMethod</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
