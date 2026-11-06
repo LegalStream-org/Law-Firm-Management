@@ -89,6 +89,13 @@
                 </div>
 
                 <div class="col-md-4">
+                    <label asp-for="Terms" class="form-label">Payment Terms (days)</label>
+                    <input asp-for="Terms" type="number" min="0" max="365" step="1" class="form-control" />
+                    <div class="form-text">Leave blank for Due on Receipt.</div>
+                    <span asp-validation-for="Terms" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-4">
                     <label asp-for="EIN" class="form-label">EIN</label>
                     <input asp-for="EIN" class="form-control" placeholder="12-3456789 or 123-45-6789" />
                     <span asp-validation-for="EIN" class="text-danger"></span>
